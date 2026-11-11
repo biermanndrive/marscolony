@@ -1,0 +1,2 @@
+window.RSO_MODELS = (b => ({ W05_tunnel_bend90: b.W05bend, E14_pipeline_bend90: b.E14bend, E01_solar_blanket_10m: () => b.E01(10), E09_horizontal_tank_5m: () => b.E09(5), E11_ice_drill_rig_stage2: () => b.E11(2), E12_fuel_plant_large: () => b.E12(true),
+  E08_sphere_tank_methane: () => b.E08('methane', 0xc8641f), E08_sphere_tank_water: () => b.E08('water', 0x2f6f9c), E08_sphere_tank_oxygen: () => b.E08('oxygen', 0x4f8a5b), E08_sphere_tank_nitrogen: () => b.E08('nitrogen', 0xc2a23a) }))(RSO_B);

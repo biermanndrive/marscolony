@@ -1,0 +1,6 @@
+{
+  "name": "red-station-one-models",
+  "private": true,
+  "description": "Three.js r128 for the model build scripts",
+  "dependencies": { "three": "0.128.0" }
+}
