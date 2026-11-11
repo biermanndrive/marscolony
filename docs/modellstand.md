@@ -15,3 +15,5 @@ Von der Vorschlagsliste für Erde und Orbit fehlen noch: Tanker beim Andocken, M
 Übersichtsbilder liegen in `models/previews/`.
 
 Für den Browser liegen alle 133 Dateien zusätzlich in `models/web/`: zusammen 11 MB statt 125 MB, im Schnitt 6 Meshes je Modell. In der Mars-Szene sind 79 Modelle der Epochen 0 bis II eingebaut.
+
+Related: [3D-Modelle](../models/README.md), [Mars-Szene](mars-szene.md), [Offene Punkte](offene-punkte.md)

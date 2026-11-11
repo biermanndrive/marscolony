@@ -62,3 +62,5 @@ Die Nummern (W01, E03 …) entsprechen der Modellliste im Planungsdokument. Die 
 - Die eingegrabenen Habitate W06 haben ihre Luke auf 1,5 m Höhe. Wo sie in der Szene ein früheres Röhrenhabitat ersetzen, endet der Tunnel im Regolithhügel statt an der Luke.
 
 Behoben am 11.11.2026: Luken von Z01 auf 2,5 m Mitte wie bei den Röhrenhabitaten (mit Podest und Seitentreppe), gerippte Endkappen bei W01/W02 mit Rippenplatte um die Luke, W01/W02 mit 512-px-Texturen neu erzeugt (1,1 bis 1,8 MB statt 4 bis 7 MB), Modelle für den Browser zusammengefasst (siehe oben).
+
+Related: [Modellstand](../docs/modellstand.md), [Mars-Szene](../docs/mars-szene.md)

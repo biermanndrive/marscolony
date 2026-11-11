@@ -77,3 +77,5 @@ Jedes ankommende Schiff aus der Simulation landet auf Landeplatz 2 (vor dessen B
 
 - `index.html?mars=80` startet mit 80 Kolonisten auf dem Mars.
 - In der Browser-Konsole: `RSO.setMars(60)` setzt die Einwohnerzahl, `RSO.land('crew')` oder `RSO.land('cargo')` löst eine Landung aus, `RSO.scene('earth')` wechselt die Szene.
+
+Related: [Entscheidungen](entscheidungen.md), [Modellstand](modellstand.md), [3D-Modelle](../models/README.md)

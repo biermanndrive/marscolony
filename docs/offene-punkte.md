@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- Oberfläche des Prototyps auf die Designsprache in `design/` umstellen (HUD, Panel, Einstellungen, alle drei Szenen)
+- Oberfläche des Prototyps auf die [Designsprache](../design/INDEX.md) umstellen (HUD, Panel, Einstellungen, alle drei Szenen)
 
 - Mars-Szene auf einem echten Rechner prüfen: Bildrate bei 99 Einwohnern, Wirkung im 9:16-Ausschnitt, Landeanflug im Aufnahmemodus
 - Modelle für Epoche III (ab 100 Einwohnern)
@@ -30,4 +30,6 @@
 
 - Nacharbeiten an Z01, W01 und W02 (Lukenhöhe, Endkappen, Texturgröße)
 - Modelle für den Browser zusammengefasst und verkleinert (`models/web/`)
-- Mars-Szene mit den Modellen der Epochen 0 bis II, Landeplätze rund 200 m vom Kern hinter einem Regolith-Schutzwall (`docs/mars-szene.md`)
+- Mars-Szene mit den Modellen der Epochen 0 bis II, Landeplätze rund 200 m vom Kern hinter einem Regolith-Schutzwall ([mars-szene.md](mars-szene.md))
+
+Related: [Entscheidungen](entscheidungen.md), [Modellstand](modellstand.md), [Designsprache](../design/INDEX.md)

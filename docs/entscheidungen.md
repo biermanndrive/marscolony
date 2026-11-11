@@ -18,3 +18,5 @@ Stand 11.11.2026. Ausführlich im Planungsdokument, Tab „Entscheidungen“.
 | Ton | Ereignisgeräusche und Atmosphäre in der Website, Musik und Sprecher im Schnitt |
 | Livestream | Vorerst nicht, Wiedervorlage bei etwa 500 Abonnenten |
 | Modellstil | Realistisch: sandbeige gerippte Isolierhülle, mattes graues Aluminium, schmale gedämpfte Orange-Markierungen, dunkle Fenster, keine Leuchtringe, sichtbare Verwitterung |
+
+Related: [Offene Punkte](offene-punkte.md), [Mars-Szene](mars-szene.md), [Designsprache](../design/INDEX.md)
