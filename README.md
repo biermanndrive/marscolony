@@ -14,6 +14,7 @@ Das Repository enthält den Browser-Prototyp, die Geländedaten, alle bisher geb
 | `models/glb/` | Fertige Modelle als GLB, sortiert nach Mars-Epoche 0–I, Mars-Epoche II, Erde und Orbit. |
 | `models/web/` | Dieselben Modelle für den Browser zusammengefasst und verkleinert (aus `models/tools/optimize.mjs`). Der Prototyp lädt sie von hier. |
 | `models/previews/` | Übersichtsbilder der Modellpakete. |
+| `design/` | Designsprache der Oberfläche: Tokens, Bausteine und Regeln für Mars, Orbit und Erde (siehe `design/INDEX.md`). |
 | `docs/` | Entscheidungen, Modellstand, offene Punkte und der Aufbau der Mars-Szene. |
 
 ## Prototyp starten

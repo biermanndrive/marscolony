@@ -2,6 +2,8 @@
 
 ## Als Nächstes
 
+- Oberfläche des Prototyps auf die Designsprache in `design/` umstellen (HUD, Panel, Einstellungen, alle drei Szenen)
+
 - Mars-Szene auf einem echten Rechner prüfen: Bildrate bei 99 Einwohnern, Wirkung im 9:16-Ausschnitt, Landeanflug im Aufnahmemodus
 - Modelle für Epoche III (ab 100 Einwohnern)
 
@@ -23,6 +25,8 @@
 - Figuren mit Skelett und Animation, Gesichter gegebenenfalls aus einem KI-3D-Generator
 
 ## Erledigt am 11.11.2026
+
+- Designsprache der Oberfläche festgelegt (`design/`, Artifact „Red Station One UI“)
 
 - Nacharbeiten an Z01, W01 und W02 (Lukenhöhe, Endkappen, Texturgröße)
 - Modelle für den Browser zusammengefasst und verkleinert (`models/web/`)

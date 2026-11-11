@@ -1,0 +1,54 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Red Station One UI</title>
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--scene-ground); color:var(--ink); font-family:var(--font-sans); overflow:hidden; }
+  .cover { position:relative; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; width:480px; height:288px; }
+  .sky { fill:var(--scene-sky); }
+  .rust { fill:var(--rust); }
+  .cool { fill:var(--cool); }
+  .live { fill:var(--live); }
+  .ink { fill:var(--ink); }
+  .blk { rx:var(--radius-lg); }
+  .pill { rx:var(--radius-pill); }
+  .arc { fill:none; stroke:var(--ink); stroke-width:1; stroke-dasharray:3 5; }
+  .arc.solid { stroke:var(--live); stroke-width:3; stroke-dasharray:none; stroke-linecap:round; }
+  .words { position:absolute; left:var(--space-8); bottom:var(--space-8); max-width:440px; }
+  .name { margin:0; font-size:64px; line-height:.95; font-weight:200; letter-spacing:-.01em; color:var(--ink); }
+  .tag { margin:var(--space-3) 0 0 2px; font-size:14px; line-height:20px; color:var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      scene-sky 216×288 slab bled off top and bottom (the backdrop) · rust 120×168 (the colony) · cool 120×72 (transfer) · live 72×24 pill once (the one lit element) · ink 24×24 disc
+  arrangement one tall backdrop slab with satellites to its right, tops on a space-6 line, gutters space-4, the slab bleeding off the top
+  pattern     arcs, from the ring gauge and orbit paths: three dashed hairline arcs (ring-gauge ticks) centred on the slab's lower left, one solid live arc segment as the value
+  scales      gutters space-4, top inset space-6, pill rx radius-pill (half of 24), block corners radius-lg
+-->
+<rect class="sky blk" x="16" y="-24" width="216" height="336" rx="22"/>
+<rect class="rust blk" x="248" y="24" width="120" height="168" rx="22"/>
+<rect class="cool blk" x="384" y="24" width="120" height="72" rx="22"/>
+<rect class="live pill" x="384" y="112" width="72" height="24" rx="12"/>
+<circle class="ink" cx="404" cy="168" r="12"/>
+<circle class="arc" cx="40" cy="264" r="96"/>
+<circle class="arc" cx="40" cy="264" r="136"/>
+<circle class="arc" cx="40" cy="264" r="176"/>
+<path class="arc solid" d="M 40 128 A 136 136 0 0 1 152 186"/>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Red Station<br>One UI</h1>
+<p class="tag">Glass instruments over a living Mars colony.</p>
+</div>
+</div>
+</body>
+</html>
