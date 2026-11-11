@@ -110,8 +110,14 @@
     root.add(box(1.2, .5, .9, -1.3, ry + .25, .9, M.metal, 'roof_unit')); const rd = box(1.6, .05, 1.0, -.9, ry + .35, -1.3, M.radiator, 'roof_radiator'); rd.rotation.x = -.4; root.add(rd);
     const wingWall = skinMat('wing_wall', { W: 512, H: 256, seed: 402, dust: D, base: TAN, nU: 3, nV: 2, p: .06, h: 'up', depth: 2.2 });
     for (let i = 0; i < 4; i++) { const w = G('wing_module'), x0 = 4.0, wl = 3.2; w.add(box(wl, .5, 3.0, x0 + wl / 2, .25, 0, M.lowMetal, 'wing_foundation')); w.add(boxT(wl, 2.9, 2.8, x0 + wl / 2, .5 + 1.45, 0, wingWall, M.tan, 'wing_body')); w.add(box(wl + .05, .1, 2.9, x0 + wl / 2, 3.45, 0, M.metal, 'wing_roof_edge'));
-      w.add(roundDoor(M, x0 + wl + .03, 2.05, .62, 'wing_hatch')); for (const k of [-1, 1]) { w.add(box(1.1, .45, .04, x0 + 1.7, 2.35, k * 1.42, M.glass, 'wing_window')); w.add(box(1.2, .55, .03, x0 + 1.7, 2.35, k * 1.405, M.metal, 'wing_window_frame')); }
-      w.add(box(.9, .1, 1.4, x0 + wl + .5, .45, 0, M.metal, 'wing_step')); w.add(box(.9, .1, 1.2, x0 + wl + 1.0, .2, 0, M.metal, 'wing_step')); if (i % 2) { const p = box(1.6, .05, 1.2, x0 + 1.6, 3.75, 0, M.radiator, 'wing_radiator'); p.rotation.z = .25; w.add(p); } else w.add(box(.9, .4, .9, x0 + 1.6, 3.7, 0, M.metal, 'wing_vent'));
+      w.add(roundDoor(M, x0 + wl + .03, CY, .62, 'wing_hatch')); // hatch centre 2.5 m, same as the tube habitats for (const k of [-1, 1]) { w.add(box(1.1, .45, .04, x0 + 1.7, 2.35, k * 1.42, M.glass, 'wing_window')); w.add(box(1.2, .55, .03, x0 + 1.7, 2.35, k * 1.405, M.metal, 'wing_window_frame')); }
+      { // landing under the raised hatch, stair down to the side so the docking axis stays free
+        const lx = x0 + wl + .5, ly = CY - .74; w.add(box(.8, .08, 1.7, lx, ly - .04, -.05, M.metal, 'wing_landing'));
+        for (const k of [-1, 1]) w.add(strut([lx + .3, 0, k * .7 - .05], [lx + .3, ly - .08, k * .7 - .05], .04, M.steel, 'landing_leg'));
+        for (let n = 1; n <= 7; n++) { const y = ly - n * (ly / 7.6); w.add(box(.8, .06, .3, lx, y - .03, .8 + n * .3 - .15, M.metal, 'wing_step')); }
+        for (const k of [-1, 1]) w.add(strut([lx + k * .4, ly + .9, -.85], [lx + k * .4, ly + .9, .78], .022, M.steel, 'handrail'));
+        w.add(strut([lx + .4, ly, .8], [lx + .4, .05, 2.95], .035, M.steel, 'stair_stringer')); w.add(strut([lx - .4, ly, .8], [lx - .4, .05, 2.95], .035, M.steel, 'stair_stringer'));
+        w.add(strut([lx + .4, ly + .9, .78], [lx + .4, .95, 2.95], .022, M.steel, 'handrail')); } if (i % 2) { const p = box(1.6, .05, 1.2, x0 + 1.6, 3.75, 0, M.radiator, 'wing_radiator'); p.rotation.z = .25; w.add(p); } else w.add(box(.9, .4, .9, x0 + 1.6, 3.7, 0, M.metal, 'wing_vent'));
       w.rotation.y = i * Math.PI / 2; root.add(w); }
     return root; }
 

@@ -13,3 +13,5 @@ Stand 11.11.2026.
 Von der Vorschlagsliste für Erde und Orbit fehlen noch: Tanker beim Andocken, Mars-Orbitalstation, Mond, Passagiere, Zubringerbus als Einzelmodell, Kleinteile wie Zäune und Laternen.
 
 Übersichtsbilder liegen in `models/previews/`.
+
+Für den Browser liegen alle 133 Dateien zusätzlich in `models/web/`: zusammen 11 MB statt 125 MB, im Schnitt 6 Meshes je Modell. In der Mars-Szene sind 79 Modelle der Epochen 0 bis II eingebaut.

@@ -46,7 +46,7 @@ VIEWS_L = {"hero": ([13.5, 6.2, 14.5], [0, 2.0, 0]), "side": ([0, 2.6, 25], [0, 
 async def main():
     out = os.path.join(S, "..", "build", "out8"); os.makedirs(out, exist_ok=True)
     async with async_playwright() as p:
-        b = await p.chromium.launch(args=["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"])
+        b = await p.chromium.launch(executable_path=os.environ.get("CHROME_PATH") or None, args=["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"])
         pg = await b.new_page(viewport={"width": 1200, "height": 760})
         pg.on("console", lambda m: print("console", m.type, m.text) if m.type in ("error", "warning") else None)
         pg.on("pageerror", lambda e: print("pageerror", e))

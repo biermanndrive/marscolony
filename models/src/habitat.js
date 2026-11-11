@@ -11,7 +11,7 @@
   // ---------- textures ----------
   function hullTexture(len, dust, seed) {
     // insulated, ribbed hull skin: sand-coloured blanket segments between ring ribs, weathered
-    const W = 1024, H = len > 6 ? 1024 : 512, r = rng(seed);
+    const W = 512, H = len > 6 ? 512 : 256, r = rng(seed); // 512 px around the hull is enough for the city view
     const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
     const img = g.createImageData(W, H), d = img.data;
     const hgt = new Float32Array(W * H);
@@ -100,7 +100,15 @@
     // hull + tapered ends
     root.add(xCyl(R, R, main, 0, M.hull, { open: true, seg: 64, name: 'hull' }));
     for (const s of [-1, 1]) {
-      root.add(xCyl(s < 0 ? 1.05 : R, s < 0 ? R : 1.05, coneL, s * (half + coneL / 2), M.white, { seg: 64, name: 'endcone' }));
+      // end cone in the same ribbed insulation as the hull: hull texture, UVs scaled so the rib pitch matches
+      const cone = xCyl(s < 0 ? 1.05 : R, s < 0 ? R : 1.05, coneL, s * (half + coneL / 2), M.hull, { seg: 64, open: true, name: 'endcone' });
+      { const uv = cone.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * coneL / main); }
+      root.add(cone);
+      root.add(xCyl(R + .03, R + .03, .09, s * (half + .02), M.metal, { seg: 64, name: 'cone_rib' }));
+      // flat end plate behind the hatch, stiffened by radial ribs like the hull
+      root.add(xCyl(1.05, 1.05, .05, s * (endX - .025), M.white, { seg: 48, name: 'end_plate' }));
+      for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6, rr = .9;
+        const rib = box(.06, .26, .07, s * (endX + .01), CY + Math.sin(a) * rr, Math.cos(a) * rr, M.metal, 'end_plate_rib'); rib.rotation.x = -a + Math.PI / 2; root.add(rib); }
       root.add(xCyl(R + .035, R + .035, .12, s * half, M.metal, { seg: 64, name: 'joint_ring' }));
       root.add(xCyl(R + .012, R + .012, .07, s * (half - .3), M.orange, { seg: 64, open: true, name: 'accent_stripe' }));
       root.add(xCyl(.93, .93, .1, s * (endX - .01), M.metal, { seg: 48, name: 'end_ring' }));

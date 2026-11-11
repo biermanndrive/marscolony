@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Red Station One</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -162,8 +163,8 @@ button.primary:hover{filter:brightness(1.08)}
       <div class="hud-top"><div class="where" data-hud="where"><span class="tag">Red Station One</span><span class="loc">Arcadia Planitia · 39.1°N 189.8°E</span></div><span class="sol" id="sol" data-hud="sol">SOL 086</span></div>
       <div class="hud-bottom">
         <div class="count" data-hud="count"><b id="hudCount">37</b><small>colonists</small></div>
-        <div class="chip" id="hudStage" data-hud="stage">Stage II · Farms &amp; radar</div>
-        <div class="next" id="hudNext" data-hud="next">Next: Greenhouse II at 45</div>
+        <div class="chip" id="hudStage" data-hud="stage">Epoch II · Outpost</div>
+        <div class="next" id="hudNext" data-hud="next">Next: –</div>
       </div>
     </div>
       <div class="hud" data-for="earth" aria-hidden="true" hidden>
@@ -249,8 +250,8 @@ button.primary:hover{filter:brightness(1.08)}
         <label class="sw"><input type="checkbox" id="c-auto" checked><span>Automatischer Rundflug</span></label>
         <div class="field-row"><label for="c-speed">Tempo</label><output id="c-speed-out">30 %</output></div>
         <input type="range" id="c-speed" min="0" max="1" step="0.01" value="0.3">
-        <div class="chips"><button type="button" data-view="overview">Übersicht</button><button type="button" data-view="ground">Bodenperspektive</button><button type="button" data-view="top">Vogelperspektive</button><button type="button" data-view="crater">Kraterblick</button></div>
-        <label class="sw"><input type="checkbox" id="c-rec"><span>Aufnahmemodus: nächstes Schiff im Transfer hervorheben</span></label>
+        <div class="chips"><button type="button" data-view="overview">Übersicht</button><button type="button" data-view="ground">Bodenperspektive</button><button type="button" data-view="top">Vogelperspektive</button><button type="button" data-view="crater">Kraterblick</button><button type="button" data-view="port">Landeplatz</button></div>
+        <label class="sw"><input type="checkbox" id="c-rec"><span>Aufnahmemodus: nächstes Schiff im Transfer hervorheben, Landungen auf dem Mars zeigen</span></label>
         <p class="menu-note">Die festen Ansichten gelten für die Mars-Szene. Linke Maustaste dreht, rechte verschiebt, Mausrad zoomt. WASD oder Pfeiltasten bewegen, Q und E drehen. Auf dem Handy: ein Finger dreht, zwei Finger zoomen und verschieben.</p>
       </section>
     </section>
@@ -259,7 +260,8 @@ button.primary:hover{filter:brightness(1.08)}
     <ol class="stages" id="stages"></ol>
 
     <p class="note">Der Marsboden ist echt: NASA-HiRISE-Höhendaten eines Standorts, der als Landekandidat für SpaceX Starship nahe Arcadia Planitia fotografiert wurde. Der Krater rund 290 m von der Kolonie entfernt ist ebenfalls echt.</p>
-    <p class="note">Alle Gebäude und Raketen sind Platzhalter aus Code. KI-Modelle ersetzen sie später, ohne Bauplätze oder Kamerawege zu verändern.</p>
+    <p class="note">Die Mars-Szene zeigt die fertigen Modelle der Epochen 0 bis II, platziert nach dem Meilenstein-Katalog und den Wachstumsformeln. Die Landeplätze liegen rund 200 m südlich des Kerns hinter einem versetzten Regolith-Schutzwall. Erdhafen und Transfer nutzen noch Platzhalter.</p>
+    <p class="note" id="modelNote" hidden>Einige Modelle konnten nicht geladen werden und erscheinen als Kästen. Lokal die Seite über einen Webserver öffnen, zum Beispiel <code>python3 -m http.server</code> im Hauptordner des Repositorys.</p>
     <p class="hint">Tasten 1, 2, 3 wechseln die Szene · H blendet Anzeigen aus · M den Menü-Button</p>
   </aside>
 </div>
@@ -268,6 +270,8 @@ button.primary:hover{filter:brightness(1.08)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/meshopt_decoder.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
@@ -279,16 +283,19 @@ window.HMAP={"n": 768, "size": 3671.6400000000003, "min": -4015.07470703125, "ma
 const V3 = THREE.Vector3;
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ---------- build plan (from the stage document) ---------- */
-const STAGES = [
-  {n:'I',  from:0,     to:24,    name:'Landing base',        items:'Command hub, solar, batteries, launch pad, first habitats'},
-  {n:'II', from:25,    to:99,    name:'Farms & radar',       items:'Greenhouses, radar, soil pump, housing for 10 and 25'},
-  {n:'III',from:100,   to:499,   name:'Research & industry', items:'Silos, hangar, research lab, medical center, housing for 50'},
-  {n:'IV', from:500,   to:1999,  name:'Domes & markets',     items:'Park domes, shopping district, housing for 100–500'},
-  {n:'V',  from:2000,  to:9999,  name:'Rail & quarry',       items:'Railroads, quarry, housing for 1,000'},
-  {n:'VI', from:10000, to:24999, name:'Landmarks',           items:'Stadium, statue, housing for 2,000'}
+/* ---------- epochs (planning doc: eight epochs, the transition is gated by supply, the ranges are guides) ---------- */
+const STAGES=[
+  {n:'0',  from:0,     to:0,      name:'Vanguard',     items:'Robots prepare the landing: pad, command hub, solar field, crates, first rover'},
+  {n:'I',  from:1,     to:24,     name:'Landing base', items:'Habitats, batteries, tanks, ice drilling, fuel plant'},
+  {n:'II', from:25,    to:99,     name:'Outpost',      items:'Greenhouses, radar, workshop, regolith shielding, first reactor'},
+  {n:'III',from:100,   to:499,    name:'Settlement',   items:'Sinter plant, brick housing, medical centre, sports centre, school'},
+  {n:'IV', from:500,   to:1999,   name:'Colony',       items:'Glassworks, park dome, market hall, steelworks, hospital, tunnels'},
+  {n:'V',  from:2000,  to:9999,   name:'City',         items:'Rail, quarry, university, chemical plant, large spaceport'},
+  {n:'VI', from:10000, to:24999,  name:'Metropolis',   items:'Stadium, maglev, founders\u2019 monument, crater park, museum'},
+  {n:'VII',from:25000, to:100000, name:'City-state',   items:'Satellite towns, heavy industry, shipyard, second crater dome'}
 ];
 const stageOf = c => STAGES.find(s => c >= s.from && c <= s.to) || STAGES[STAGES.length-1];
+const BUILT_TO=99; /* buildings exist up to the end of epoch II */
 
 /* ---------- helpers ---------- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -303,7 +310,7 @@ function rawH(px,py){px=Math.min(Math.max(px,0),HN-1.001);py=Math.min(Math.max(p
   const a=HD[i],b=HD[i+1],c=HD[i+HN],d=HD[i+HN+1];return (a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy)/65535*HR;}
 const SITE_H=rawH(HMAP.site[0],HMAP.site[1]);
 const CRATER={x:(HMAP.crater[0]-HMAP.site[0])*HMPP,z:(HMAP.crater[1]-HMAP.site[1])*HMPP};
-function groundY(x,z){
+function groundBase(x,z){
   const px=HMAP.site[0]+x/HMPP,py=HMAP.site[1]+z/HMPP,d=Math.hypot(x,z);
   let h=rawH(px,py)-SITE_H;
   h*=1-.8*(1-smooth(60,150,d));                       /* graded building site */
@@ -313,6 +320,11 @@ function groundY(x,z){
   h+=(fbm(x*.35,z*.35)-.5)*.35*smooth(8,40,d)*(1-smooth(400,900,d));   /* fine grain */
   return h;
 }
+/* graded spots: landing pads, the second cargo ship, the reactor */
+const FLAT=[{x:-45,z:-196,r0:19,r1:34},{x:60,z:-196,r0:19,r1:34},{x:14,z:-232,r0:11,r1:24},{x:-185,z:75,r0:10,r1:24}];
+function groundY(x,z){let h=groundBase(x,z);
+  for(const f of FLAT){const d=Math.hypot(x-f.x,z-f.z);if(d<f.r1){if(f.h===undefined)f.h=groundBase(f.x,f.z);h+=(f.h-h)*(1-smooth(f.r0,f.r1,d));}}
+  return h;}
 
 /* ---------- renderer ---------- */
 const canvas=document.getElementById('c');
@@ -379,164 +391,172 @@ function mesh(geo,mat,shadow=true){const m=new THREE.Mesh(geo,mat);m.castShadow=
 function beam(a,b,r,mat){const d=new V3().subVectors(b,a);const len=d.length();const m=mesh(new THREE.CylinderGeometry(r,r,len,6),mat);
   m.position.copy(a).addScaledVector(d,.5);m.quaternion.setFromUnitVectors(new V3(0,1,0),d.normalize());return m;}
 
-/* ---------- building kit (placeholders for AI models later) ---------- */
-function hub(){const g=new THREE.Group();
-  const core=mesh(new THREE.CylinderGeometry(4,4.4,4,8),M.hull);core.position.y=2;g.add(core);
-  const band=mesh(new THREE.CylinderGeometry(4.08,4.08,.5,8,1,true),M.win);band.position.y=2.7;g.add(band);
-  const roof=mesh(new THREE.CylinderGeometry(3,4,1,8),M.hullDark);roof.position.y=4.5;g.add(roof);
-  const mast=mesh(new THREE.CylinderGeometry(.08,.08,5,6),M.metal);mast.position.y=7.5;g.add(mast);
-  const tip=mesh(new THREE.SphereGeometry(.28,10,8),M.accent);tip.position.y=10;g.add(tip);
-  for(let i=0;i<4;i++){const a=i*Math.PI/2;
-    const w=mesh(new THREE.BoxGeometry(4,2.6,3),M.hull);w.position.set(Math.cos(a)*5.6,1.3,Math.sin(a)*5.6);w.rotation.y=-a;g.add(w);
-    const s=mesh(new THREE.BoxGeometry(2.4,.35,3.06),M.win,false);s.position.set(Math.cos(a)*5.6,1.75,Math.sin(a)*5.6);s.rotation.y=-a;g.add(s);}
-  return g;}
-function habTube(len){const g=new THREE.Group();const r=1.5,y=r+1;
-  const body=mesh(new THREE.CylinderGeometry(r,r,len,28),M.hull);body.rotation.z=Math.PI/2;body.position.y=y;g.add(body);
-  const nb=Math.max(1,Math.round(len/3.2));
-  for(let k=1;k<nb;k++){const b=mesh(new THREE.CylinderGeometry(r*1.015,r*1.015,.14,28),M.hullDark);b.rotation.z=Math.PI/2;b.position.set(-len/2+k*len/nb,y,0);g.add(b);}
-  for(const s of[-1,1]){
-    const cap=mesh(new THREE.CylinderGeometry(r*1.06,r*1.06,.3,28),M.hullDark);cap.rotation.z=Math.PI/2;cap.position.set(s*len/2,y,0);g.add(cap);
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(r*.9,.05,6,40),M.ring);ring.rotation.y=Math.PI/2;ring.position.set(s*(len/2+.17),y,0);g.add(ring);
-    const w=mesh(new THREE.BoxGeometry(len*.5,.32,.2),M.win,false);w.position.set(0,y+.45,s*(r-.02));g.add(w);}
-  for(const lx of[-len/2+.9,len/2-.9])for(const s of[-1,1])g.add(beam(new V3(lx,y-r*.6,s*r*.5),new V3(lx,0,s*r*.95),.09,M.metal));
-  return g;}
-function habCluster(n){const g=new THREE.Group();const sp=4;
-  for(let i=0;i<n;i++){const t=habTube(7);t.position.z=(i-(n-1)/2)*sp;g.add(t);}
-  const spine=mesh(new THREE.CylinderGeometry(1.05,1.05,(n-1)*sp+1,20),M.hull);spine.rotation.x=Math.PI/2;spine.position.y=2.5;g.add(spine);
-  const st=mesh(new THREE.BoxGeometry(1.4,.2,2.6),M.metal);st.position.set(0,.9,((n-1)/2)*sp+2.1);st.rotation.x=.55;g.add(st);
-  return g;}
-function connector(x1,z1,x2,z2){const g=new THREE.Group();const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const inner=new THREE.Group();
-  const t=mesh(new THREE.CylinderGeometry(.75,.75,len,16),M.hull);t.rotation.z=Math.PI/2;t.position.y=1.7;inner.add(t);
-  const n=Math.max(1,Math.floor(len/4));for(let k=0;k<n;k++){const lx=-len/2+(k+.5)*len/n;
-    for(const s of[-1,1])inner.add(beam(new V3(lx,1.2,s*.4),new V3(lx,0,s*.75),.07,M.metal));}
-  inner.rotation.y=-Math.atan2(dz,dx);g.add(inner);return g;}
-function greenhouse(len,r){const g=new THREE.Group();
-  const shell=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,24,1,true,0,Math.PI),M.ghGlass);shell.rotation.z=Math.PI/2;g.add(shell);
-  const n=Math.round(len/1.6);for(let i=0;i<=n;i++){const rib=mesh(new THREE.TorusGeometry(r,.07,5,24,Math.PI),M.hull);rib.rotation.y=Math.PI/2;rib.position.x=-len/2+i*len/n;g.add(rib);}
-  for(const s of[-1,1]){const wall=mesh(new THREE.CircleGeometry(r,24,0,Math.PI),M.hull);wall.rotation.y=Math.PI/2;wall.position.x=s*len/2;g.add(wall);
-    const door=mesh(new THREE.BoxGeometry(.2,1.9,1.1),M.hullDark);door.position.set(s*(len/2+.06),.95,0);g.add(door);
-    const bed=mesh(new THREE.BoxGeometry(len*.86,.45,r*.55),M.green);bed.position.set(0,.22,s*r*.42);g.add(bed);}
-  return g;}
-function dome(r,trees){const g=new THREE.Group();const geo=new THREE.SphereGeometry(r,14,7,0,Math.PI*2,0,Math.PI/2);
-  const shell=new THREE.Mesh(geo,M.glass);shell.position.y=.6;g.add(shell);
-  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geo,1),M.line);edges.position.y=.6;g.add(edges);
-  const base=mesh(new THREE.CylinderGeometry(r*1.02,r*1.05,.7,28),M.hull);base.position.y=.35;g.add(base);
-  if(trees){const rng=mulberry32(Math.round(r*1000));const n=Math.round(r*r*.35);
-    for(let i=0;i<n;i++){const a=rng()*6.283,d=Math.sqrt(rng())*r*.7,h=(1+rng()*1.6)*(r/6);
-      const c=mesh(new THREE.ConeGeometry(h*.38,h,7),M.green);c.position.set(Math.cos(a)*d,.7+h/2,Math.sin(a)*d);g.add(c);}}
-  return g;}
-function tanks(){const g=new THREE.Group();
-  [[-1.4,-.9],[1.5,-.4],[0,1.5]].forEach(([x,z])=>{const s=mesh(new THREE.SphereGeometry(1.3,20,14),M.hull);s.position.set(x,2.1,z);g.add(s);
-    const b=mesh(new THREE.CylinderGeometry(1.33,1.33,.2,20),M.hullDark);b.position.set(x,2.1,z);g.add(b);
-    for(let k=0;k<3;k++){const a=k*2.094;g.add(beam(new V3(x+Math.cos(a)*.6,1.4,z+Math.sin(a)*.6),new V3(x+Math.cos(a)*1.1,0,z+Math.sin(a)*1.1),.08,M.metal));}});
-  return g;}
-function solar(rows,cols){const g=new THREE.Group();const pg=new THREE.BoxGeometry(2.6,.08,1.6),post=new THREE.CylinderGeometry(.06,.06,1.2,5);
-  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const x=(c-(cols-1)/2)*2.9,z=(r-(rows-1)/2)*3.2;
-    const p=mesh(pg,M.panel);p.position.set(x,1.25,z);p.rotation.x=.5;g.add(p);const q=mesh(post,M.metal);q.position.set(x,.6,z);g.add(q);}
-  return g;}
-function battery(){const g=new THREE.Group();for(let i=0;i<4;i++){const x=(i-1.5)*2.2;
-  const b=mesh(new THREE.BoxGeometry(1.8,1.6,3),M.hullDark);b.position.set(x,.8,0);g.add(b);
-  const s=mesh(new THREE.BoxGeometry(1.84,.18,3.04),M.accent,false);s.position.set(x,1.25,0);g.add(s);}return g;}
-function crates(seed){const g=new THREE.Group();const rng=mulberry32(seed*97);
-  for(let i=0;i<8;i++){const s=1+rng()*.7;const b=mesh(new THREE.BoxGeometry(s,s*.8,s),M.crate);
-    const stack=i>5;b.position.set((rng()-.5)*5,s*.4+(stack?.9:0),(rng()-.5)*4);b.rotation.y=rng()*.6;g.add(b);}return g;}
-function pad(){const g=new THREE.Group();
-  const base=mesh(new THREE.CylinderGeometry(7,7.4,.4,40),M.pad);base.position.y=.2;g.add(base);
-  const ring=new THREE.Mesh(new THREE.RingGeometry(5.3,5.6,48),M.padLine);ring.rotation.x=-Math.PI/2;ring.position.y=.42;g.add(ring);
-  const ship=new THREE.Group();ship.position.y=.4;
-  const body=mesh(new THREE.CylinderGeometry(1.3,1.3,12,24),M.steel);body.position.y=6.4;ship.add(body);
-  const nose=mesh(new THREE.ConeGeometry(1.3,3.6,24),M.steel);nose.position.y=14.2;ship.add(nose);
-  for(const s of[-1,1]){const f=mesh(new THREE.BoxGeometry(1.3,2.4,.14),M.hullDark);f.position.set(s*1.9,11.6,0);ship.add(f);
-    const a=mesh(new THREE.BoxGeometry(1.6,3,.16),M.hullDark);a.position.set(s*2.05,2.2,0);ship.add(a);}
-  for(let k=0;k<3;k++){const a=k*2.094+.5;ship.add(beam(new V3(Math.cos(a)*1.1,1.2,Math.sin(a)*1.1),new V3(Math.cos(a)*2,0,Math.sin(a)*2),.1,M.metal));}
-  g.add(ship);return g;}
-function radar(){const g=new THREE.Group();
-  const base=mesh(new THREE.BoxGeometry(3,1.6,3),M.hull);base.position.y=.8;g.add(base);
-  const post=mesh(new THREE.CylinderGeometry(.25,.35,3.4,10),M.metal);post.position.y=3.3;g.add(post);
-  const head=new THREE.Group();head.position.y=5;const tilt=new THREE.Group();tilt.rotation.x=-.75;
-  const dish=mesh(new THREE.SphereGeometry(2.6,24,8,0,Math.PI*2,0,.85),M.hull);dish.rotation.x=Math.PI;dish.position.y=2.6;tilt.add(dish);
-  const horn=mesh(new THREE.CylinderGeometry(.05,.05,2.2,6),M.metal);horn.position.y=1.1;tilt.add(horn);
-  head.add(tilt);g.add(head);g.userData.spin=head;return g;}
-function drill(){const g=new THREE.Group();const top=new V3(0,10,0);
-  for(const sx of[-2.2,2.2])for(const sz of[-2.2,2.2])g.add(beam(new V3(sx,0,sz),top,.13,M.metal));
-  for(const h of[3.2,6.2]){const k=1-h/10;for(const [a,b] of [[[-1,-1],[1,-1]],[[1,-1],[1,1]],[[1,1],[-1,1]],[[-1,1],[-1,-1]]])
-    g.add(beam(new V3(a[0]*2.2*k,h,a[1]*2.2*k),new V3(b[0]*2.2*k,h,b[1]*2.2*k),.07,M.metal));}
-  const hoist=mesh(new THREE.BoxGeometry(.9,.9,.9),M.accent);hoist.position.y=9.6;g.add(hoist);
-  const pipe=mesh(new THREE.CylinderGeometry(.2,.2,9.6,8),M.hullDark);pipe.position.y=4.8;g.add(pipe);
-  const house=mesh(new THREE.BoxGeometry(4,2.4,3),M.hull);house.position.set(5.2,1.2,0);g.add(house);
-  const hw=mesh(new THREE.BoxGeometry(2.6,.32,3.06),M.win,false);hw.position.set(5.2,1.6,0);g.add(hw);
-  return g;}
-function silos(){const g=new THREE.Group();[-2.8,0,2.8].forEach((x,i)=>{const z=i===1?1.6:0;
-  const c=mesh(new THREE.CylinderGeometry(1.6,1.6,9,20),M.hull);c.position.set(x,4.5,z);g.add(c);
-  const cap=mesh(new THREE.SphereGeometry(1.6,20,8,0,Math.PI*2,0,Math.PI/2),M.hullDark);cap.position.set(x,9,z);g.add(cap);
-  for(const h of[2.5,5.5]){const b=mesh(new THREE.CylinderGeometry(1.64,1.64,.18,20),M.hullDark);b.position.set(x,h,z);g.add(b);}});
-  return g;}
-function boxModule(w,h,d,o={}){const g=new THREE.Group();
-  const b=mesh(new THREE.BoxGeometry(w,h,d),M.hull);b.position.y=h/2+.3;g.add(b);
-  const p=mesh(new THREE.BoxGeometry(w*.92,.3,d*.92),M.metal);p.position.y=.15;g.add(p);
-  const ws=mesh(new THREE.BoxGeometry(w*.7,.35,d+.06),M.win,false);ws.position.y=h*.74+.3;g.add(ws);
-  if(o.stripe){const s=mesh(new THREE.BoxGeometry(w+.05,.32,d+.05),o.stripe,false);s.position.y=h*.32+.3;g.add(s);}
-  if(o.door){const dr=mesh(new THREE.BoxGeometry(w*.42,h*.58,.16),M.hullDark);dr.position.set(0,h*.29+.3,d/2+.06);g.add(dr);
-    const r=mesh(new THREE.BoxGeometry(w*.42,.12,2),M.metal);r.position.set(0,.2,d/2+1);r.rotation.x=.14;g.add(r);}
-  return g;}
-function hangar(){const g=new THREE.Group();
-  const shell=mesh(new THREE.CylinderGeometry(4.6,4.6,13,28,1,false,0,Math.PI),M.hull);shell.rotation.z=Math.PI/2;g.add(shell);
-  const door=mesh(new THREE.BoxGeometry(.2,4.6,5.6),M.hullDark);door.position.set(6.55,2.3,0);g.add(door);
-  for(let i=0;i<=5;i++){const rib=mesh(new THREE.TorusGeometry(4.62,.09,5,28,Math.PI),M.hullDark);rib.rotation.y=Math.PI/2;rib.position.x=-6.5+i*2.6;g.add(rib);}
-  return g;}
-function lab(){const g=new THREE.Group();g.add(dome(4,false));const m=boxModule(6,3,4.6,{door:true});m.position.x=6.6;g.add(m);
-  const mast=mesh(new THREE.CylinderGeometry(.08,.08,4,6),M.metal);mast.position.set(6.6,5.3,0);g.add(mast);return g;}
-function medical(){const g=new THREE.Group();const a=boxModule(9,3.6,6,{stripe:M.teal,door:true});g.add(a);
-  const b=boxModule(5,2.4,4,{stripe:M.teal});b.position.y=3.9;g.add(b);return g;}
-function tower(f){const g=new THREE.Group();
-  for(let i=0;i<f;i++){const c=mesh(new THREE.CylinderGeometry(4,4,2.8,24),M.hull);c.position.y=1.4+i*2.8;g.add(c);
-    const w=mesh(new THREE.CylinderGeometry(4.03,4.03,.7,24,1,true),M.win,false);w.position.y=1.6+i*2.8;g.add(w);
-    const lip=mesh(new THREE.CylinderGeometry(4.18,4.18,.16,24),M.hullDark);lip.position.y=2.8+i*2.8;g.add(lip);}
-  const top=new THREE.Mesh(new THREE.SphereGeometry(3.9,16,8,0,Math.PI*2,0,Math.PI/2),M.glass);top.position.y=f*2.8;g.add(top);
-  return g;}
-function rover(){const g=new THREE.Group();
-  const b=mesh(new THREE.BoxGeometry(3.2,1.1,1.9),M.hull);b.position.y=1.15;g.add(b);
-  const cab=mesh(new THREE.BoxGeometry(1.2,.7,1.7),M.win);cab.position.set(1,2,0);g.add(cab);
-  for(const sx of[-1.1,1.1])for(const sz of[-1,1]){const w=mesh(new THREE.CylinderGeometry(.5,.5,.4,14),M.metal);w.rotation.x=Math.PI/2;w.position.set(sx,.5,sz*1.08);g.add(w);}
-  const m=mesh(new THREE.CylinderGeometry(.05,.05,1.6,6),M.metal);m.position.set(-1.1,2.4,.5);g.add(m);return g;}
+/* ---------- 3D models: GLB files from models/web (built by models/tools/optimize.mjs) ---------- */
+const MODEL_BASE=(document.querySelector('meta[name="rso-models"]')||{}).content||'../models/web/';
+const BOUNDS={"C01_colonist_tpose_blue":[-1.1,1.1,-0.4,0.3,2],"C01_colonist_tpose_green":[-1.1,1.1,-0.4,0.3,2],"C01_colonist_tpose_orange":[-1.1,1.1,-0.4,0.3,2],"C01_colonist_tpose_yellow":[-1.1,1.1,-0.4,0.3,2],"C02_colonist_survey_pole":[-0.5,0.5,-0.4,0.3,2],"C02_colonist_toolcase":[-0.5,0.5,-0.4,0.3,2],"D01_crate_small":[-0.4,0.4,-0.4,0.4,0.8],"D02_crate_large":[-1.1,1.1,-0.6,0.6,1.2],"D03_cargo_container_6m":[-3,3.1,-1.2,1.2,2.8],"D04_storage_drum":[-0.3,0.3,-0.3,0.3,1],"D05_pallet_with_sacks":[-0.6,0.6,-0.6,0.6,0.6],"D07_floodlight_mast_10m":[-0.8,0.8,-0.6,0.6,10.5],"D08_path_marker_post":[-0.1,0.1,-0.1,0.1,1],"D10_cable_tray_4m":[-2.1,2.1,-0.4,0.4,0.5],"D11_pipe_segment_4m":[-2,2,-0.3,0.3,0.8],"D12_lattice_mast_12m":[-0.9,0.9,-1.3,1,13.5],"D13_barrier_3m":[-1.5,1.5,-0.3,0.3,1.2],"D21_tool_cart":[-0.7,0.6,-0.3,0.3,1],"D22_weather_station":[-0.5,0.6,-0.6,0.4,2.4],"E01_solar_blanket_10m":[-7.5,5,-2.5,1.3,0.6],"E01_solar_blanket_20m":[-12.5,10,-2.5,1.3,0.6],"E03_battery_bank":[-3.1,3.2,-1.2,1.2,2.8],"E08_sphere_tank_methane":[-1.5,2.1,-1.5,1.5,4.1],"E08_sphere_tank_nitrogen":[-1.5,2.1,-1.5,1.5,4.1],"E08_sphere_tank_oxygen":[-1.5,2.1,-1.5,1.5,4.1],"E08_sphere_tank_water":[-1.5,2.1,-1.5,1.5,4.1],"E09_horizontal_tank_5m":[-2.5,3,-1.3,1.5,3.6],"E09_horizontal_tank_8m":[-4,4.5,-1.3,1.5,3.6],"E11_ice_drill_rig":[-3,6.8,-3.5,3.2,9.4],"E11_ice_drill_rig_stage2":[-3.3,6.8,-3.6,3.2,9.4],"E12_fuel_plant_large":[-10.1,11,-4.3,3.9,8.2],"E12_fuel_plant_small":[-6.2,6.9,-3.4,3.3,7.2],"E14_pipeline_bend90":[0,3.6,0,3.6,0.9],"E14_pipeline_straight_10m":[-5,5,-0.8,0.8,0.9],"E16_life_support_module":[-2.7,3.3,-2.1,1.1,3.4],"I01_rover_garage_1door":[-5.2,6.2,-4.2,6.8,6.4],"I01_rover_garage_3door":[-5.2,6.2,-4.2,6.8,6.4],"I03_storage_tent_12m":[-7.8,7.3,-3.6,3.6,3.2],"I03_storage_tent_8m":[-5.8,5.3,-3.6,3.6,3.2],"P01_whip_antenna":[-0.3,0.3,-0.3,0.3,2],"P02_satellite_dish_small":[-0.6,0.6,-0.3,0.6,1.5],"P03_radiator_panel":[-1.6,1.7,-0.5,0.3,1.6],"P04_air_handling_unit":[-1,0.8,-0.5,0.5,1.1],"P06_airlock_module":[-1.6,2.7,-1.2,1.2,3.2],"P07_stairs_5steps":[-0.1,1.8,-0.7,0.7,2],"P08_vehicle_ramp_4m":[-2.3,2.1,-1.2,1.2,0.6],"P11_cable_bundle_4m":[-2.1,2.1,0,0.3,0.6],"R01_landing_pad_simple":[-15.5,15.5,-15.5,15.5,1.1],"R03_starship_landed_cargo":[-8.3,8.3,-5.8,6.4,50],"R03_starship_landed_crew":[-8.3,8.3,-5.8,6.4,50],"R03_starship_landed_tanker":[-8.3,8.3,-5.8,5.8,50],"V01_open_rover_blue":[-1.5,1.5,-1,1,2.7],"V01_open_rover_orange":[-1.5,1.5,-1,1,2.7],"V01_open_rover_white":[-1.5,1.5,-1,1,2.7],"V02_pressurized_rover_tan_orange":[-3.4,3.2,-1.9,1.9,4.8],"V02_pressurized_rover_white_blue":[-3.4,3.2,-1.9,1.9,4.8],"V11_cargo_robot_large":[-0.8,0.9,-0.7,0.7,1.7],"V11_cargo_robot_small":[-0.5,0.6,-0.4,0.4,1.1],"W01_dust1_clean":[-3,3.5,-2.4,2.4,5.2],"W01_dust2_light":[-3,3.5,-2.4,2.4,5.2],"W01_dust3_heavy":[-3,3.5,-2.4,2.4,5.2],"W02_plain":[-5,5.5,-2.4,2.4,5.2],"W02_sideport":[-5,5.5,-2.4,2.4,5.2],"W04_node_3ports":[-2,2,-2,1.9,4.4],"W04_node_4ports":[-2,2,-2,2,4.4],"W05_tunnel_bend90":[-2,1.3,-1.3,2,3.5],"W05_tunnel_straight":[-2,2,-1.3,1.3,3.4],"Z01_command_hub":[-8.1,8.1,-8.1,8.1,11.7],"A01_arched_greenhouse_10m":[-6,6.8,-3.2,3.2,3.4],"A01_arched_greenhouse_14m":[-8,8.8,-3.2,3.2,3.4],"A01_arched_greenhouse_6m":[-4,4.8,-3.2,3.2,3.4],"A02_arched_greenhouse_20m":[-14.2,11.8,-4.2,4.2,5.9],"A06_greenhouse_dome_12m":[-7.5,8.4,-6.2,6.2,6.7],"A06_greenhouse_dome_18m":[-10.5,11.4,-9.2,9.2,9.7],"C03_colonist_indoor_blue":[-0.9,0.9,-0.3,0.3,1.9],"C03_colonist_indoor_green":[-0.9,0.9,-0.3,0.3,1.8],"C03_colonist_indoor_grey":[-0.9,0.9,-0.3,0.3,1.8],"C03_colonist_indoor_orange":[-0.9,0.9,-0.3,0.3,1.8],"D14_sandbag_berm_4m":[-2.5,2.1,-1,0.8,1.6],"D15_blank_sign":[-1,1,-0.4,0.2,2.3],"D20_hydroponic_bed_4m":[-2,2.4,-0.5,0.5,0.9],"E02_solar_row_10m":[-5.1,5.1,-1,1,2.1],"E02_solar_row_15m":[-7.6,7.6,-1,1,2.1],"E02_solar_row_5m":[-2.6,2.6,-1,1,2.1],"E04_fission_reactor_large":[-4.2,5,-4.2,4.2,5.2],"E04_fission_reactor_small":[-2.8,5,-2.8,2.8,4.7],"E10_standing_tank_10m":[-3.6,2.3,-3.5,2.5,10.5],"E10_standing_tank_6m":[-3.6,2.3,-3.5,2.5,6.5],"E13_water_treatment":[-10.3,13.8,-9,5.1,5.2],"E17_communication_station":[-6.3,5.5,-5.1,3,15.3],"I02_workshop_3d_printer":[-10.3,10.3,-6.3,8.7,7.6],"I04_arched_hall_2seg":[-4.2,6.4,-5.3,5.3,5.7],"I04_arched_hall_3seg":[-6.2,8.4,-5.3,5.3,5.7],"I04_arched_hall_4seg":[-8.2,10.4,-5.3,5.3,5.7],"I04_arched_hall_5seg":[-10.2,12.4,-5.3,5.3,5.7],"P05_roof_solar_panel":[-1,1,-0.5,0.5,0.6],"P09_rollup_door":[-2.3,2.6,-0.2,0.3,4.2],"P15_scaffold_6x6":[-3.1,3.1,-0.7,1.2,7.1],"V03_regolith_excavator":[-1.7,4.2,-1.1,1.1,3.1],"V12_inspection_robot":[-0.4,0.6,-0.3,0.3,1.1],"V13_helicopter_drone":[-0.6,0.6,-0.6,0.6,1.1],"V15_solar_cleaning_robot":[-0.3,0.5,-0.4,0.4,0.5],"V16_loader_arm":[-1.7,3.9,-1.1,1.2,3.3],"W03_tube_habitat_long_plain":[-7,7.5,-2.4,2.4,5.2],"W03_tube_habitat_long_roof_module":[-7,7.5,-2.4,2.4,5.5],"W06_buried_habitat_10m":[-6.5,6.5,-3.1,3.2,5.4],"W06_buried_habitat_6m":[-4.5,4.5,-3.1,3.2,5.4],"Z02_canteen":[-8.3,8.3,-5.3,6.9,5.5],"Z03_medical_station":[-5.8,5.3,-3.2,4.9,5.5]}; /* x min/max, z min/max, height (m) of each source model */
+const EPOCH2=/^(A0|C03|D14|D15|D20|E02|E04|E10|E13|E17|I02|I04|P05|P09|P15|V03|V12|V13|V15|V16|W03|W06|Z02|Z03)/;
+const modelUrl=k=>MODEL_BASE+(EPOCH2.test(k)?'mars_epoch_2/':'mars_epoch_0-1/')+k+'.glb';
+const gltfLoader=new THREE.GLTFLoader();if(window.MeshoptDecoder)gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+/* the optimiser folds plain colours into a few shared surface classes (rso_matte, rso_metal, ...);
+   one material instance per class serves every model, and rso_window lights up at night */
+const SHARED=new Map(),WINDOWS=[];let winLevel=.12;
+function shareMat(m){if(/^rso_/.test(m.name)){if(!SHARED.has(m.name)){fogPatch(m);SHARED.set(m.name,m);if(m.name==='rso_window'){m.emissiveIntensity=winLevel/.12;WINDOWS.push(m);}}return SHARED.get(m.name);}
+  fogPatch(m);return m;}
+const gltfCache=new Map();
+/* hosts that cannot serve .glb get the same files as base64 text (<meta name="rso-models-format" content="b64">) */
+const MODEL_B64=((document.querySelector('meta[name="rso-models-format"]')||{}).content)==='b64';
+function fetchGLB(k){if(!MODEL_B64)return fetch(modelUrl(k)).then(r=>{if(!r.ok)throw new Error(r.status+' '+k);return r.arrayBuffer();});
+  return fetch(modelUrl(k)+'.txt').then(r=>{if(!r.ok)throw new Error(r.status+' '+k);return r.text();}).then(t=>{const b=atob(t.trim()),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer;});}
+function loadModel(k){if(!gltfCache.has(k))gltfCache.set(k,fetchGLB(k).then(buf=>new Promise((res,rej)=>gltfLoader.parse(buf,'',g=>{g.scene.updateMatrixWorld(true);
+  g.scene.traverse(o=>{if(o.isMesh){o.material=shareMat(o.material);o.castShadow=true;o.receiveShadow=true;}});res(g.scene);},rej))));
+  return gltfCache.get(k);}
 
-/* ---------- plots: same spot every time ---------- */
-const PLOTS=[
-  {t:0,  n:'Command hub',              x:0,   z:0,   b:()=>hub()},
-  {t:0,  n:'Solar field',              x:-24, z:2,   b:()=>solar(2,4)},
-  {t:0,  n:'Supply crates',            x:9,   z:-10, b:()=>crates(1)},
-  {t:1,  n:'First habitat',            x:15,  z:2,   b:()=>habTube(6)},
-  {t:1,  n:'Tunnel', conn:[7.6,0,12,2]},
-  {t:3,  n:'Gas tanks',                x:-8,  z:-13, b:()=>tanks()},
-  {t:6,  n:'Battery bank',             x:-24, z:-8,  b:()=>battery()},
-  {t:8,  n:'First rover',              x:4,   z:-21, ry:.6, b:()=>rover()},
-  {t:10, n:'Launch pad',               x:-4,  z:-46, b:()=>pad()},
-  {t:13, n:'Habitat for 5',            x:15,  z:12,  b:()=>habTube(10)},
-  {t:13, n:'Tunnel', conn:[15,3.5,15,10.5]},
-  {t:16, n:'Solar field II',           x:-24, z:16,  b:()=>solar(2,4)},
-  {t:19, n:'Supply crates',            x:-10, z:9,   b:()=>crates(2)},
-  {t:22, n:'Gas tanks II',             x:-15, z:-19, b:()=>tanks()},
-  {t:25, n:'Greenhouse',               x:-4,  z:22,  b:()=>greenhouse(10,3)},
-  {t:25, n:'Tunnel', conn:[0,7.6,0,19]},
-  {t:30, n:'Radar station',            x:26,  z:-18, b:()=>radar()},
-  {t:36, n:'Habitat block for 10',     x:32,  z:6,   b:()=>habCluster(3)},
-  {t:36, n:'Tunnel', conn:[18,2,28.5,2]},
-  {t:45, n:'Greenhouse II',            x:-17, z:28,  b:()=>greenhouse(10,3)},
-  {t:55, n:'Soil pump',                x:30,  z:-34, b:()=>drill()},
-  {t:65, n:'Dome farm',                x:10,  z:28,  b:()=>dome(6,true)},
-  {t:80, n:'Habitat block for 25',     x:34,  z:24,  b:()=>habCluster(4)},
-  {t:80, n:'Tunnel', conn:[34,13,34,15.5]},
-  {t:90, n:'Solar field III',          x:-38, z:4,   b:()=>solar(3,4)},
-  {t:100,n:'Grain silos',              x:-32, z:-24, b:()=>silos()},
-  {t:130,n:'Hangar',                   x:16,  z:-30, b:()=>hangar()},
-  {t:170,n:'Research lab',             x:-38, z:34,  b:()=>lab()},
-  {t:220,n:'Medical center',           x:22,  z:42,  b:()=>medical()},
-  {t:270,n:'Residence for 50',         x:-2,  z:44,  b:()=>tower(5)},
-  {t:330,n:'Launch pad II',            x:28,  z:-58, b:()=>pad()},
-  {t:390,n:'Solar field IV',           x:-52, z:18,  ry:.2, b:()=>solar(3,5)},
-  {t:450,n:'Residence II for 50',      x:-18, z:50,  b:()=>tower(6)},
-  {t:500,n:'Park dome',                x:50,  z:-10, b:()=>dome(11,true)}
-];
+/* every model is drawn as instanced meshes: one draw call per part, however many copies stand in the colony */
+const POOLS=new Map(),ZERO=new THREE.Matrix4().makeScale(0,0,0),_m=new THREE.Matrix4(),_w=new THREE.Matrix4(),_q=new THREE.Quaternion(),_s=new V3(),_p=new V3(),_yA=new V3(0,1,0);
+let modelsFailed=0;
+function pool(k){let p=POOLS.get(k);if(!p){p={k,slots:[],parts:null};POOLS.set(k,p);}return p;}
+function slotMatrix(sl){if(!sl.on||sl.s<=.002)return ZERO;_q.setFromAxisAngle(_yA,sl.ry);_s.set(sl.s,sl.s,sl.s);_p.set(sl.x,sl.y,sl.z);return _m.compose(_p,_q,_s);}
+function writeSlot(p){p.dirty=true;}
+/* visible copies are packed to the front and the instance count trimmed, so hidden slots cost nothing */
+function flushPools(){POOLS.forEach(p=>{if(!p.dirty||!p.parts)return;p.dirty=false;let n=0;
+  for(const sl of p.slots){if(!sl.on||sl.s<=.002)continue;const m=slotMatrix(sl);for(const pt of p.parts){_w.multiplyMatrices(m,pt.local);pt.im.setMatrixAt(n,_w);}n++;}
+  for(const pt of p.parts){pt.im.count=n;pt.im.instanceMatrix.needsUpdate=true;}});}
+function buildPools(){POOLS.forEach(p=>{loadModel(p.k).then(root=>{p.parts=[];
+    root.traverse(o=>{if(!o.isMesh)return;const im=new THREE.InstancedMesh(o.geometry,o.material,p.slots.length);
+      im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.castShadow=im.receiveShadow=true;im.frustumCulled=false;scene.add(im);p.parts.push({im,local:o.matrixWorld.clone()});});
+    p.dirty=true;},e=>{console.warn('Model not loaded:',p.k,e);modelsFailed++;const n=document.getElementById('modelNote');if(n)n.hidden=false;
+    const b=BOUNDS[p.k]||[-1,1,-1,1,2],g=new THREE.BoxGeometry(b[1]-b[0],b[4],b[3]-b[2]);g.translate((b[0]+b[1])/2,b[4]/2,(b[2]+b[3])/2);fogPatch(M.hull);
+    const im=new THREE.InstancedMesh(g,M.hull,p.slots.length);im.castShadow=im.receiveShadow=true;im.frustumCulled=false;scene.add(im);p.parts=[{im,local:new THREE.Matrix4()}];
+    p.dirty=true;});});}
+
+/* ---------- colony layout: milestones from the planning doc, formulas for everything that repeats ---------- */
+/* Directions: +z north, -z south. Core at the origin, housing grows north-east toward the real crater,
+   farms north-west, solar and reactor west, ice and fuel south-west, workshops south-east,
+   landing pads about 200 m south behind a staggered regolith berm. */
+const ITEMS=[],OCC=[],NEXT=[],DEG=Math.PI/180,PAD_TOP=.42,LZ={x:60,z:-196};
+const hs=s=>{let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return (h>>>0)/4294967296;};
+/* a milestone gets one fixed moment inside its population range, rolled from its name, so every video matches the last */
+const T0={};const roll=(name,a,b,...deps)=>T0[name]=Math.max(a+Math.floor(hs('rso.'+name)*(b-a+1)),...deps.map(d=>d+1));
+const rad=k=>{const b=BOUNDS[k]||[-1,1,-1,1];return .5*Math.hypot(b[1]-b[0],b[3]-b[2]);};
+const ROADS=[[[0,-9],[0,-60],[4,-110],[28,-140],[18,-165],[-6,-166],[-16,-186],[-34,-193]],[[-16,-186],[10,-204],[44,-198]],[[10,-204],[13,-220]]];
+function roadDist(x,z){let best=1e9;for(const pl of ROADS)for(let i=0;i<pl.length-1;i++){const[ax,az]=pl[i],[bx,bz]=pl[i+1],dx=bx-ax,dz=bz-az,l2=dx*dx+dz*dz;
+  const t=Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/l2));best=Math.min(best,Math.hypot(x-ax-dx*t,z-az-dz*t));}return best;}
+function place(o){o.ry=o.ry||0;if(o.m)o.ms=[[o.t,o.m]];o.t=o.ms[0][0];o.key=o.ms[0][1];
+  o.y=(o.y===undefined?groundY(o.x,o.z):o.y)+(o.dy||0);
+  o.slots=o.ms.map(([t,k,a],n)=>{const p=pool(k);p.slots.push({x:o.x,y:o.y,z:o.z,ry:o.ry,s:1,on:false});return {t,p,i:p.slots.length-1,pop:n===0||!!a};});
+  const b=BOUNDS[o.key]||[-1,1,-1,1],lx=(b[0]+b[1])/2,lz=(b[2]+b[3])/2,c=Math.cos(o.ry),s=Math.sin(o.ry);
+  o.cx=o.x+lx*c+lz*s;o.cz=o.z-lx*s+lz*c;o.r=rad(o.key);o.w=b[1]-b[0];o.d=b[3]-b[2];o.cur=-1;o.anim=null;
+  if(!o.noOcc)OCC.push({x:o.cx,z:o.cz,r:o.r*.8});
+  if(o.label&&o.milestone)NEXT.push({t:o.t,label:o.label});
+  ITEMS.push(o);return o;}
+const MS=o=>place(Object.assign({milestone:true},o));
+const free=(x,z,r)=>OCC.every(o=>Math.hypot(x-o.x,z-o.z)>o.r+r+1.5)&&roadDist(x,z)>r+5;
+const H=Math.PI/2;
+
+/* Epoch 0: robots prepare the landing */
+MS({t:0,m:'R01_landing_pad_simple',x:-45,z:-196,label:'Landing pad 1',far:true});
+place({t:0,m:'R03_starship_landed_cargo',x:-45,z:-196,ry:.4,dy:PAD_TOP,far:true,noOcc:true});
+for(const [x,z] of [[-64,-180],[-24,-214],[44,-178],[78,-212]])place({t:x>0?999:0,m:'D07_floodlight_mast_10m',x,z,ry:Math.atan2(x-(x>0?60:-45),z+196),far:true});
+MS({t:0,m:'Z01_command_hub',x:0,z:0,label:'Command hub'});
+MS({t:0,m:'D03_cargo_container_6m',x:13,z:-15,ry:.3,label:'Supply crates'});
+[['D02_crate_large',8.5,-19,.2],['D02_crate_large',10.5,-21.5,.6],['D01_crate_small',7,-16.5,.1],['D01_crate_small',7.2,-21.8,.9],['D04_storage_drum',16.5,-19.5,0],['D04_storage_drum',17.2,-18.8,0],['D05_pallet_with_sacks',14,-21,.3]]
+  .forEach(([k,x,z,ry])=>place({t:0,m:k,x,z,ry}));
+MS({t:0,m:'V01_open_rover_orange',x:-5.5,z:-15,ry:2.2,label:'Rover'});
+
+/* Epoch I milestones */
+roll('hab1',1,1);roll('bat1',2,4);roll('tanks',3,6);roll('drill1',5,8);roll('life',9,12);roll('fuel',8,12,T0.drill1,T0.bat1);
+roll('hab5',10,14,T0.life);roll('garage',12,16);roll('cluster',18,24,T0.hab5);roll('ship2',20,24);
+/* Epoch II milestones */
+roll('gh1',25,30);roll('radar',28,35);roll('workshop',32,40);roll('cover',35,45);T0.excav=Math.max(30,T0.cover-3);
+roll('reactor',40,50);roll('gh23',45,55,T0.gh1);roll('water',50,60,T0.drill1);roll('hall',55,65,T0.workshop);roll('canteen',60,70,T0.cluster);
+roll('dome',65,75,T0.gh23);roll('medical',70,80);roll('block25',75,90);roll('drill2',80,95,T0.water);roll('pad2',90,99,T0.fuel);
+
+/* first habitat: tunnel to the hub's east hatch (both hatch centres at 2.5 m), dust builds up, later buried under regolith */
+place({t:T0.hab1,m:'W05_tunnel_straight',x:9.33,z:0});
+MS({ms:[[T0.hab1,'W01_dust1_clean'],[T0.hab1+22,'W01_dust2_light'],[T0.cover,'W06_buried_habitat_6m',1]],x:14.31,z:0,label:'First habitat'});
+MS({t:T0.tanks,m:'E08_sphere_tank_oxygen',x:-24,z:-44,label:'Gas and liquid tanks'});
+place({t:T0.tanks,m:'E08_sphere_tank_methane',x:-19,z:-46});place({t:T0.tanks,m:'E08_sphere_tank_nitrogen',x:-24.5,z:-49.5});
+place({t:T0.tanks,m:'E09_horizontal_tank_5m',x:-17.5,z:-52});
+MS({t:T0.drill1,m:'E11_ice_drill_rig',x:-60,z:-55,label:'Ice drill'});
+MS({t:T0.life,m:'E16_life_support_module',x:13,z:10,label:'Life support module'});
+MS({t:T0.fuel,m:'E12_fuel_plant_small',x:-40,z:-75,label:'Fuel plant'});
+place({t:T0.hab5,m:'W05_tunnel_straight',x:0,z:9.33,ry:H});
+MS({ms:[[T0.hab5,'W02_sideport'],[T0.cover,'W06_buried_habitat_10m',1]],x:0,z:16.31,ry:-H,label:'Habitat for 5'});
+MS({t:T0.garage,m:'I01_rover_garage_1door',x:26,z:-24,label:'Rover garage'});
+place({t:T0.garage,m:'V02_pressurized_rover_tan_orange',x:36,z:-12,ry:.5});
+place({t:T0.cluster,m:'W05_tunnel_straight',x:-4,z:16.31});
+MS({t:T0.cluster,m:'W04_node_4ports',x:-8,z:16.31,label:'Habitat cluster for 10'});
+[[-12.98,16.31,Math.PI],[-8,21.29,-H],[-8,11.33,H]].forEach(([x,z,ry])=>place({ms:[[T0.cluster,'W01_dust1_clean'],[T0.cluster+25,'W01_dust2_light'],[T0.cluster+60,'W01_dust3_heavy']],x,z,ry}));
+MS({t:T0.ship2,m:'R03_starship_landed_cargo',x:14,z:-232,ry:1.1,label:'Second cargo ship lands',far:true});
+
+/* Epoch II milestones */
+MS({t:T0.gh1,m:'A01_arched_greenhouse_10m',x:-24,z:34,label:'Greenhouse'});
+MS({t:T0.radar,m:'E17_communication_station',x:-52,z:-34,ry:.6,label:'Radar and comms station'});
+MS({t:T0.workshop,m:'I02_workshop_3d_printer',x:58,z:-28,label:'Workshop with 3D printer'});
+MS({t:T0.excav,m:'V03_regolith_excavator',x:22,z:7,ry:2.5,label:'Regolith excavator'});
+NEXT.push({t:T0.cover,label:'Regolith shielding'});
+MS({t:T0.reactor,m:'E04_fission_reactor_small',x:-185,z:75,ry:-.4,label:'Reactor module 1',far:true});
+MS({t:T0.gh23,m:'A01_arched_greenhouse_14m',x:-24,z:44,label:'Greenhouses 2 and 3'});place({t:T0.gh23,m:'A01_arched_greenhouse_6m',x:-46,z:34});
+MS({t:T0.water,m:'E13_water_treatment',x:-74,z:-84,label:'Water treatment'});
+MS({t:T0.hall,m:'I04_arched_hall_3seg',x:40,z:-56,label:'Storage hall'});
+MS({t:T0.canteen,m:'Z02_canteen',x:-17,z:-17,label:'Canteen'});
+MS({t:T0.dome,m:'A06_greenhouse_dome_12m',x:-74,z:58,label:'Dome farm'});
+MS({t:T0.medical,m:'Z03_medical_station',x:-17,z:-36,label:'Medical station'});
+place({t:T0.block25,m:'W05_tunnel_straight',x:32,z:34});
+MS({t:T0.block25,m:'W04_node_4ports',x:36,z:34,label:'Habitat block for 25'});
+place({t:T0.block25,m:'W03_tube_habitat_long_plain',x:44.98,z:34});place({t:T0.block25,m:'W03_tube_habitat_long_roof_module',x:36,z:42.98,ry:-H});
+place({t:T0.block25,m:'W03_tube_habitat_long_plain',x:36,z:25.02,ry:H});
+MS({t:T0.drill2,m:'E11_ice_drill_rig_stage2',x:-114,z:-92,label:'Ice drill 2 with pipeline'});
+for(const x of [-101.6,-91.6])place({t:T0.drill2,m:'E14_pipeline_straight_10m',x,z:-88});
+MS({t:T0.pad2,m:'R01_landing_pad_simple',x:LZ.x,z:LZ.z,label:'Landing pad 2',far:true});
+for(const it of ITEMS)if(it.m==='D07_floodlight_mast_10m'&&it.t===999){it.t=it.ms[0][0]=it.slots[0].t=T0.pad2;}
+
+/* growth formulas (planning doc): solar 1 field per 5 colonists up to 100, a battery bank per 2 fields,
+   a tank group per 40, a vehicle per 8, housing always 10 % above the population, 40 m² of greenhouse per head */
+const SOLAR=[];for(const x of [-48,-76,-104,-132,-160])for(const z of [-20,-6,8,22])SOLAR.push([x,z]);
+SOLAR.forEach(([x,z],k)=>{const t=5*k;if(t>BUILT_TO)return;const e2=t>=25;
+  [-4,0,4].forEach((dz,j)=>place({t,m:e2?'E02_solar_row_15m':'E01_solar_blanket_20m',x:e2?x:x+1.25,z:z+dz*(e2?1.1:1),
+    label:j===0?(k?'Solar field':'Solar field 1'):null,milestone:k===0&&j===0,noOcc:j!==1}));
+  OCC.push({x,z,r:12});});
+for(let j=0;j<10;j++){const t=j?10*j:T0.bat1;place({t,m:'E03_battery_bank',x:-32,z:-26+6*j,label:j?null:'Battery bank',milestone:j===0});}
+place({t:40,m:'E10_standing_tank_6m',x:-10,z:-50});place({t:40,m:'E10_standing_tank_6m',x:-10,z:-57.5,ry:1.2});
+place({t:80,m:'E09_horizontal_tank_8m',x:-23,z:-59});place({t:80,m:'E08_sphere_tank_water',x:-29,z:-55});
+[['V11_cargo_robot_small',18,-10,.3],['V01_open_rover_blue',22,-10,-.2],['V11_cargo_robot_large',-54,-49,.8],['V02_pressurized_rover_white_blue',46,-12,.4],
+ ['V01_open_rover_white',26,-10,.1],['V15_solar_cleaning_robot',-64.5,-13,0],['V12_inspection_robot',-35.5,-32,1],['V16_loader_arm',36,-44,2.2],
+ ['V13_helicopter_drone',8,22,0],['V11_cargo_robot_small',-36,-66,.5],['V01_open_rover_orange',30,-10,-.1],['V12_inspection_robot',-106,-83,2]]
+  .forEach(([k,x,z,ry],i)=>place({t:8*(i+1),m:k,x,z,ry}));
+{ /* housing: catalog habitats count first, the formula fills the gap */
+  const CAP=[[T0.hab1,2],[T0.hab5,5],[T0.cluster,10],[T0.block25,25]];
+  const slotsI=[[28,14,0],[42,14,0],[56,14,0]],slotsII=[[64,22],[64,38],[64,54],[26,66],[36,66],[46,66],[56,66],[74,22],[74,38],[74,54],[26,82],[36,82],[46,82],[56,82]];
+  const added=[];
+  for(let p=1;p<=BUILT_TO;p++){const need=Math.ceil(p*1.1);let cap=CAP.reduce((a,[t,c])=>a+(t<=p?c:0),0)+added.reduce((a,h)=>a+h.c,0);
+    while(cap<need){let h;if(p<25&&slotsI.length){const[x,z,ry]=slotsI.shift();h={c:5,o:place({t:p,ms:[[p,'W02_plain'],[Math.min(p+45,T0.cover+8),'W06_buried_habitat_10m',1]],x,z,ry})};}
+      else if(slotsII.length){const[x,z]=slotsII.shift();h={c:6,o:place({t:p,m:'W06_buried_habitat_10m',x,z,ry:H})};}else break;added.push(h);cap+=h.c;}}}
+{ const target=p=>p<25?0:1+Math.floor((p-25)/7);
+  const gh=[['A01_arched_greenhouse_14m',-24,54],['A01_arched_greenhouse_10m',-46,44],['A01_arched_greenhouse_14m',-24,64],['A01_arched_greenhouse_10m',-46,54],
+            ['A02_arched_greenhouse_20m',-28,77],['A01_arched_greenhouse_10m',-46,64],['A06_greenhouse_dome_18m',-80,84],['A01_arched_greenhouse_10m',-52,76]];
+  const cat=[T0.gh1,T0.gh23,T0.gh23,T0.dome];let n=0;
+  for(let p=25;p<=BUILT_TO;p++){while(cat.filter(t=>t<=p).length+n<target(p)&&n<gh.length){const[k,x,z]=gh[n++];place({t:p,m:k,x,z});}}}
+[['C02_colonist_survey_pole',4,-13,.4],['C02_colonist_toolcase',21,-15,-.6],['C02_colonist_survey_pole',-55,-49,1.4],['C02_colonist_toolcase',28,6,2],
+ ['C02_colonist_survey_pole',-31,38,-1],['C02_colonist_toolcase',-35,-68,.3],['C02_colonist_toolcase',53,-19,3],['C02_colonist_survey_pole',-12,-27,-2.4],['C02_colonist_toolcase',9,19,1]]
+  .forEach(([k,x,z,ry],i)=>place({t:10*(i+1),m:k,x,z,ry,noOcc:true}));
+/* path markers along the road to the pads */
+for(const pl of ROADS.slice(0,1))for(let i=0;i<pl.length-1;i++){const[ax,az]=pl[i],[bx,bz]=pl[i+1],l=Math.hypot(bx-ax,bz-az),nx=-(bz-az)/l,nz=(bx-ax)/l;
+  for(let d=7;d<l;d+=16){const s=(Math.floor(d/16)%2?1:-1)*4.4;place({t:0,m:'D08_path_marker_post',x:ax+(bx-ax)*d/l+nx*s,z:az+(bz-az)*d/l+nz*s,noOcc:true,far:true});}}
+/* small details: every follower without a milestone still adds something visible */
+{ const used=new Set(ITEMS.map(o=>o.t)),rng=mulberry32(4242);
+  const K1=['D01_crate_small','D04_storage_drum','D02_crate_large','D05_pallet_with_sacks','D21_tool_cart','D13_barrier_3m','D11_pipe_segment_4m','P02_satellite_dish_small',
+            'D07_floodlight_mast_10m','P01_whip_antenna','D10_cable_tray_4m','P04_air_handling_unit','D22_weather_station','P03_radiator_panel','D12_lattice_mast_12m'];
+  const K2=['D14_sandbag_berm_4m','D20_hydroponic_bed_4m','P15_scaffold_6x6','D15_blank_sign','V11_cargo_robot_small'];
+  const AN=[[0,0,13,34],[40,-36,8,26],[-30,-60,6,22],[46,44,10,32],[-38,56,6,26],[-4,-110,6,24],[-100,32,4,40],[24,-70,4,20]];
+  let n=0;for(let p=1;p<=BUILT_TO;p++){if(used.has(p))continue;
+    const pool2=p>=25&&n%3===2?K2:K1,k=pool2[(n*7+p)%pool2.length];if((k==='D22_weather_station'||k==='D12_lattice_mast_12m')&&ITEMS.some(o=>o.key===k))continue;
+    const a=AN[n%AN.length],r=rad(k);n++;
+    for(let tries=0;tries<60;tries++){const ang=rng()*6.283,d=a[2]+rng()*(a[3]-a[2]),x=a[0]+Math.cos(ang)*d,z=a[1]+Math.sin(ang)*d;
+      if(free(x,z,r)){place({t:p,m:k,x,z,ry:rng()*6.283});break;}}}}
+NEXT.sort((a,b)=>a.t-b.t);
+buildPools();
+
 
 /* ---------- surface detail: tileable sand, pebbles and wind ripples, generated once ---------- */
 function makeGroundTextures(){
@@ -587,12 +607,12 @@ function rockGeo(seed){const g=new THREE.IcosahedronGeometry(1,2),p=g.attributes
   for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);const n=fbm(v.x*1.2+seed*7.1+v.z*.7,v.y*1.2-seed*3.3+v.z*1.1);
     v.multiplyScalar(.6+n*.8);if(v.y<-.15)v.y=-.15+(v.y+.15)*.3;p.setXYZ(i,v.x,v.y,v.z);}
   g.computeVertexNormals();return g;}
-const onPlot=(x,z,r)=>PLOTS.some(pl=>{const px=pl.conn?(pl.conn[0]+pl.conn[2])/2:pl.x,pz=pl.conn?(pl.conn[1]+pl.conn[3])/2:pl.z;return Math.hypot(x-px,z-pz)<r;});
+const onPlot=(x,z,r)=>OCC.some(o=>Math.hypot(x-o.x,z-o.z)<o.r+r)||roadDist(x,z)<4+r||FLAT.some(f=>Math.hypot(x-f.x,z-f.z)<f.r0+r);
 const rockCols=[new THREE.Color(0x6b3a26),new THREE.Color(0x8c4e30),new THREE.Color(0xb0703f)];
 function scatter(seed,n,place,sizeFn){const rng=mulberry32(seed);const geos=[rockGeo(seed),rockGeo(seed+1),rockGeo(seed+2)];
   const ims=geos.map(g=>{const im=new THREE.InstancedMesh(g,M.rock,Math.ceil(n/3));im.castShadow=true;im.receiveShadow=true;im.count=0;scene.add(im);return im;});
   const o=new THREE.Object3D(),c=new THREE.Color();let k=0,guard=0;
-  while(k<n&&guard<n*12){guard++;const[x,z]=place(rng);if(onPlot(x,z,9))continue;
+  while(k<n&&guard<n*12){guard++;const[x,z]=place(rng);if(onPlot(x,z,1.5))continue;
     const s=sizeFn(rng),im=ims[k%3];o.position.set(x,groundY(x,z)+s*.05,z);o.rotation.set(rng()*.6,rng()*6.28,rng()*.6);o.scale.set(s*(.8+rng()*.5),s*(.6+rng()*.5),s*(.8+rng()*.5));
     o.updateMatrix();im.setMatrixAt(im.count,o.matrix);c.copy(rockCols[0]).lerp(rockCols[rng()<.5?1:2],rng());im.setColorAt(im.count,c);im.count++;k++;}
   ims.forEach(im=>{im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;});}
@@ -662,7 +682,7 @@ function applyLight(P,envNow){if(active!=='mars')return;
   scene.fog.color.set(P.hor);scene.fog.density=P.dens;
   sun.color.set(P.sunColor);sun.intensity=P.sunInt;sunDir.copy(P.sun);
   hemi.color.set(P.hor);hemi.groundColor.set(P.ground);hemi.intensity=P.hemiInt;
-  M.win.emissiveIntensity=P.win;GRADE.uniforms.uExposure.value=P.exposure;bloom.strength=P.bloom;
+  M.win.emissiveIntensity=P.win;winLevel=P.win;WINDOWS.forEach(m=>{m.emissiveIntensity=P.win/.12;});GRADE.uniforms.uExposure.value=P.exposure;bloom.strength=P.bloom;
   starMat.opacity=Math.max(0,Math.min(1,(-P.sun.y-.02)/.12))*(W.storm?.15:.9);
   if(envNow){clearTimeout(envTimer);rebuildEnv();}else{clearTimeout(envTimer);envTimer=setTimeout(rebuildEnv,220);}
 }
@@ -685,17 +705,65 @@ const blobTex=(()=>{const c=document.createElement('canvas');c.width=c.height=12
   g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.6,'rgba(255,255,255,.5)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);return new THREE.CanvasTexture(c);})();
 const blobMat=new THREE.MeshBasicMaterial({map:blobTex,color:0x1a0a04,transparent:true,opacity:.55,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
 
-/* ---------- place buildings (hidden until earned) ---------- */
 const ringGeo=new THREE.RingGeometry(.8,1,40);
-PLOTS.forEach(pl=>{
-  let g,x,z;
-  if(pl.conn){const[a,b,c,d]=pl.conn;g=connector(a,b,c,d);x=(a+c)/2;z=(b+d)/2;}
-  else{g=pl.b();x=pl.x;z=pl.z;if(pl.ry)g.rotation.y=pl.ry;}
-  g.position.set(x,groundY(x,z),z);g.updateMatrixWorld(true);
-  {const sz=new THREE.Box3().setFromObject(g).getSize(new V3());const b=new THREE.Mesh(new THREE.PlaneGeometry(sz.x*1.3+1.5,sz.z*1.3+1.5).rotateX(-Math.PI/2),blobMat);b.position.y=.06;b.renderOrder=1;if(pl.ry)b.rotation.y=-pl.ry;g.add(b);}
-  g.visible=false;g.scale.setScalar(.001);
-  pl.g=g;pl.cx=x;pl.cz=z;pl.on=false;scene.add(g);
-});
+/* soft contact shadows under every building, one instanced plane */
+const blobIM=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2),blobMat,ITEMS.length);blobIM.renderOrder=1;blobIM.frustumCulled=false;scene.add(blobIM);
+function setBlob(i){const o=ITEMS[i],sl=o.cur>=0?o.slots[o.cur].p.slots[o.slots[o.cur].i]:null;
+  if(!sl||!sl.on||o.r<1.2)blobIM.setMatrixAt(i,ZERO);else{_q.setFromAxisAngle(_yA,o.ry);const k=Math.max(.001,sl.s);_s.set((o.w*1.25+1.5)*k,1,(o.d*1.25+1.5)*k);_p.set(o.cx,o.y+.06,o.cz);blobIM.setMatrixAt(i,_m.compose(_p,_q,_s));}
+  blobIM.instanceMatrix.needsUpdate=true;}
+ITEMS.forEach((_,i)=>setBlob(i));
+
+/* ---------- regolith berms and the road to the landing pads ---------- */
+/* Two staggered arcs shield the core from the blast of landing ships; the road zigzags through the gap.
+   The reactor gets its own horseshoe berm, open to the west. Both are terrain, so they share its material. */
+const BERMS=[];
+function berm(cx,cz,R,a0,a1,Hh,W,t){const NA=Math.max(24,Math.round(R*Math.abs(a1-a0)/2)),NS=14,pos=[],uv=[],col=[],idx=[];
+  const c=new THREE.Color(),base=new THREE.Color(0x9a4722),dark=new THREE.Color(0x6b2f18);
+  for(let i=0;i<=NA;i++){const u=i/NA,a=a0+(a1-a0)*u,tp=smooth(0,.07,u)*smooth(0,.07,1-u);
+    for(let j=0;j<=NS;j++){const s=j/NS*2-1,r=R+s*W,x=cx+Math.cos(a)*r,z=cz+Math.sin(a)*r;
+      const prof=Math.pow(Math.cos(s*Math.PI/2),1.3)*Hh*tp*(.88+.24*fbm(x*.05+3,z*.05-2));
+      pos.push(x,groundY(x,z)+prof-.3,z);uv.push(x/7,z/7);c.copy(base).lerp(dark,.25*fbm(x*.09,z*.09)+.3*(prof/Hh));col.push(c.r,c.g,c.b);}}
+  for(let i=0;i<NA;i++)for(let j=0;j<NS;j++){const a=i*(NS+1)+j,b=a+NS+1;idx.push(a,a+1,b,b,a+1,b+1);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
+  if(g.attributes.normal.getY(Math.floor(NS/2))<0){for(let k=0;k<idx.length;k+=3){const q=idx[k+1];idx[k+1]=idx[k+2];idx[k+2]=q;}g.setIndex(idx);g.computeVertexNormals();}
+  const m=new THREE.Mesh(g,terrain.material);m.castShadow=true;m.receiveShadow=true;scene.add(m);
+  for(let i=0;i<=NA;i+=4){const a=a0+(a1-a0)*i/NA;OCC.push({x:cx+Math.cos(a)*R,z:cz+Math.sin(a)*R,r:W});}
+  BERMS.push({m,t});return m;}
+berm(0,0,150,-130*DEG,-82*DEG,7,11,0);
+berm(0,0,180,-88*DEG,-45*DEG,7,11,0);
+berm(-185,75,15,-142*DEG,98*DEG,4.5,5,T0.reactor);
+{ const pos=[],col=[],uv=[],idx=[],cc=new THREE.Color(0x6f3218),ce=new THREE.Color(0x8c4223);
+  for(const pl of ROADS){const pts=[];for(let i=0;i<pl.length-1;i++){const[ax,az]=pl[i],[bx,bz]=pl[i+1],l=Math.hypot(bx-ax,bz-az),n=Math.ceil(l/2);
+      for(let k=0;k<n;k++)pts.push([ax+(bx-ax)*k/n,az+(bz-az)*k/n]);}pts.push(pl[pl.length-1]);
+    const v0=pos.length/3;
+    pts.forEach(([x,z],i)=>{const[px,pz]=pts[Math.max(0,i-1)],[qx,qz]=pts[Math.min(pts.length-1,i+1)],l=Math.hypot(qx-px,qz-pz)||1,nx=-(qz-pz)/l,nz=(qx-px)/l;
+      for(const s of[-1,-.6,.6,1]){const X=x+nx*s*3.6,Z=z+nz*s*3.6;pos.push(X,groundY(X,Z)+.08,Z);uv.push(X/7,Z/7);const k=Math.abs(s)>.9?ce:cc;col.push(k.r,k.g,k.b);}
+      if(i<pts.length-1)for(let j=0;j<3;j++){const a=v0+i*4+j,b=a+4;idx.push(a,b,a+1,b,b+1,a+1);}});}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
+  const n0=g.attributes.normal.getY(0);if(n0<0){for(let k=0;k<idx.length;k+=3){const q=idx[k+1];idx[k+1]=idx[k+2];idx[k+2]=q;}g.setIndex(idx);g.computeVertexNormals();}
+  const road=new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,map:GT.map,normalMap:GT.normal,roughness:1,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
+  road.receiveShadow=true;scene.add(road);}
+
+/* ---------- arriving Starships land on pad 2 (or its graded site before the pad is built) ---------- */
+const VIS={g:new THREE.Group(),ship:null,state:'none',t:0,base:0,seq:0};VIS.g.visible=false;scene.add(VIS.g);
+const vFlame=new THREE.Mesh(new THREE.ConeGeometry(2.4,26,18,1,true),new THREE.MeshBasicMaterial({color:new THREE.Color(3.2,2.1,1.1),transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+vFlame.position.y=-13;vFlame.visible=false;VIS.g.add(vFlame);
+const vLight=new THREE.PointLight(0xffb070,0,140,2);vLight.position.y=-8;VIS.g.add(vLight);
+const DESC_H=560,DESC_T=11;
+function visitShip(kind,animate){const k=kind==='cargo'?'R03_starship_landed_cargo':'R03_starship_landed_crew',seq=++VIS.seq;
+  loadModel(k).then(root=>{if(seq!==VIS.seq)return;if(VIS.ship)VIS.g.remove(VIS.ship);VIS.ship=root.clone();VIS.g.add(VIS.ship);VIS.g.visible=true;
+    const pad2=ITEMS.find(o=>o.label==='Landing pad 2');VIS.base=groundY(LZ.x,LZ.z)+(pad2&&pad2.cur>=0?PAD_TOP:0);
+    VIS.g.position.set(LZ.x,VIS.base,LZ.z);VIS.g.rotation.y=-.7;
+    if(animate&&!reduce){VIS.state='descend';VIS.t=0;VIS.g.position.y=VIS.base+DESC_H;vFlame.visible=true;
+      if(CAM.rec){camFit=false;lastInteract=performance.now();const t=new V3(LZ.x,VIS.base+26,LZ.z);flyTo={t,p:new V3(LZ.x-60,VIS.base+48,LZ.z+150),k:0};}}
+    else{VIS.state='parked';vFlame.visible=false;vLight.intensity=0;}}).catch(()=>{});}
+function animVisit(dt){if(VIS.state!=='descend')return;VIS.t+=dt;const u=Math.min(1,VIS.t/DESC_T),h=DESC_H*Math.pow(1-u,2.6);VIS.g.position.y=VIS.base+h;
+  const k=.65+.35*Math.min(1,(1-u)*5);vFlame.scale.set(k*(1+Math.random()*.1),k*(1+Math.random()*.18),k);vLight.intensity=h<160?(1-h/160)*(1.6+Math.random()*.4):0;
+  if(h<70&&Math.random()<dt*9)puff(LZ.x+(Math.random()-.5)*16,VIS.base,LZ.z+(Math.random()-.5)*16,18+Math.random()*20);
+  if(u>=1){VIS.state='parked';vFlame.visible=false;vLight.intensity=0;puff(LZ.x,VIS.base,LZ.z,45);}}
+
 const pops=[];
 function puff(x,y,z,size){const m=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xe7a26c,transparent:true,opacity:.7,depthWrite:false,side:THREE.DoubleSide}));
   fogPatch(m.material);m.rotation.x=-Math.PI/2;m.position.set(x,y+.3,z);scene.add(m);pops.push({ring:m,p:0,size});}
@@ -705,25 +773,30 @@ const el=id=>document.getElementById(id);
 const slider=el('followers'),num=el('followersNum'),toast=el('toast');
 let count=-1,toastTimer=0,active='mars';
 const stagesEl=el('stages');
-stagesEl.innerHTML=STAGES.map(s=>`<li data-n="${s.n}"><span class="n">${s.n}</span><span class="what"><strong>${s.name}</strong><span>${s.items}</span></span><span class="rng">${s.from.toLocaleString('en')}–${s.to.toLocaleString('en')}</span></li>`).join('');
+stagesEl.innerHTML=STAGES.map(s=>`<li data-n="${s.n}"><span class="n">${s.n}</span><span class="what"><strong>${s.name}</strong><span>${s.items}${s.from>BUILT_TO?' · Modelle folgen':''}</span></span><span class="rng">${s.from===s.to?s.from:s.from.toLocaleString('en')+'–'+s.to.toLocaleString('en')}</span></li>`).join('');
 
 function showToast(text,raw){if(!toastOn)return;toast.hidden=false;toast.textContent=(raw?'':'+ ')+text;toast.classList.remove('show');void toast.offsetWidth;toast.classList.add('show');
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.hidden=true;},2500);}
 
 function setCount(c,animate){
-  c=Math.max(0,Math.min(100000,Math.round(c||0)));if(c===count)return;const grew=c>count&&count>=0;count=c;
-  el('hudCount').textContent=c;
+  c=Math.max(0,Math.min(100000,Math.round(c||0)));if(c===count)return;const prev=count,grew=c>count&&count>=0;count=c;
+  el('hudCount').textContent=c.toLocaleString('en');
   el('sol').textContent='SOL '+String(1+Math.floor(c*2.3)).padStart(3,'0');
-  const st=stageOf(c);el('hudStage').textContent='Stage '+st.n+' · '+st.name;
-  const nx=PLOTS.find(p=>p.t>c&&!p.conn);el('hudNext').textContent=nx?('Next: '+nx.n+' at '+nx.t):'Stage IV comes next';
-  let added=null;
-  PLOTS.forEach(pl=>{const want=c>=pl.t;
-    if(want&&!pl.on){pl.on=true;pl.g.visible=true;
-      if(animate&&grew&&!reduce){pl.anim=0;puff(pl.cx,pl.g.position.y,pl.cz,pl.conn?5:9);}else{pl.anim=null;pl.g.scale.setScalar(1);}
-      if(!pl.conn)added=pl.n;}
-    else if(!want&&pl.on){pl.on=false;pl.g.visible=false;pl.g.scale.setScalar(.001);pl.anim=null;}});
+  const st=stageOf(c);el('hudStage').textContent='Epoch '+st.n+' · '+st.name;
+  const nx=NEXT.find(m=>m.t>c);el('hudNext').textContent=nx?('Next: '+nx.label+' at '+nx.t):(c<100?'Next: Epoch III at 100':'Epoch III buildings are on the way');
+  const e=Math.min(c,BUILT_TO);let added=null;
+  ITEMS.forEach((o,idx)=>{let k=-1;for(let i=0;i<o.slots.length;i++)if(e>=o.slots[i].t)k=i;if(k===o.cur)return;
+    const fresh=o.cur<0;
+    if(o.cur>=0){const s=o.slots[o.cur];s.p.slots[s.i].on=false;writeSlot(s.p,s.i);}
+    o.cur=k;o.anim=null;
+    if(k>=0){const s=o.slots[k],sl=s.p.slots[s.i];sl.on=true;
+      if(animate&&grew&&!reduce&&(fresh||s.pop)){o.anim=0;sl.s=.001;puff(o.cx,o.y,o.cz,Math.min(16,o.r*1.4));}else sl.s=1;
+      writeSlot(s.p,s.i);if(fresh&&o.milestone&&o.label)added=o.label;}
+    setBlob(idx);});
+  BERMS.forEach(b=>{b.m.visible=e>=b.t;});
+  if(grew)NEXT.forEach(m=>{if(m.t>prev&&m.t<=c&&!added)added=m.label;});
   if(added&&animate&&grew)showToast(added);
-  [...stagesEl.children].forEach(li=>{const s=STAGES.find(x=>x.n===li.dataset.n);li.className=c>s.to?'done':(c>=s.from?'now':(s.from>500?'later':''));});
+  [...stagesEl.children].forEach(li=>{const s=STAGES.find(x=>x.n===li.dataset.n);li.className=c>s.to?'done':(c>=s.from?'now':(s.from>BUILT_TO?'later':''));});
 }
 
 slider.addEventListener('input',()=>setFollowers(+slider.value));
@@ -808,20 +881,21 @@ controls.addEventListener('start',()=>{lastInteract=performance.now();camFit=fal
 function syncCamUI(){el('c-rec').checked=!!CAM.rec;el('c-auto').checked=CAM.auto;el('c-speed').value=CAM.speed;el('c-speed-out').textContent=Math.round(CAM.speed*100)+' %';store.set('cam',CAM);}
 el('c-auto').addEventListener('change',e=>{CAM.auto=e.target.checked;if(CAM.auto)camFit=true;syncCamUI();});
 el('c-speed').addEventListener('input',e=>{CAM.speed=+e.target.value;syncCamUI();});
-const VIEWS={overview:{t:[0,3,0],off:null},ground:{t:[0,3,0],dist:.35,pitch:.06},top:{t:[0,0,0],dist:1.1,pitch:1.45},crater:{t:'crater',dist:.9,pitch:.22}};
+const VIEWS={overview:{t:[0,3,0],off:null},ground:{t:[0,3,0],dist:.35,pitch:.06},top:{t:[0,0,0],dist:1.1,pitch:1.45},crater:{t:'crater',dist:.9,pitch:.22},port:{t:'port'}};
 let flyTo=null;
 function viewOffset(dist,pitch){const az=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z);return new V3(Math.sin(az)*Math.cos(pitch)*dist,Math.sin(pitch)*dist,Math.cos(az)*Math.cos(pitch)*dist);}
 menu.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{const v=VIEWS[b.dataset.view];
   if(b.dataset.view==='overview'){camFit=true;CAM.auto=true;syncCamUI();lastInteract=-1e9;return;}
   camFit=false;lastInteract=performance.now();const fr=fitDist();
   const t=v.t==='crater'?new V3(CRATER.x*.55,4,CRATER.z*.55):new V3(...v.t);
+  if(b.dataset.view==='port'){const t=new V3(10,groundY(10,-200)+14,-200);flyTo={t,p:t.clone().add(new V3(-55,62,190)),k:0};return;}
   let off=viewOffset(fr*v.dist,v.pitch);if(b.dataset.view==='crater'){const d=new V3(-CRATER.x,0,-CRATER.z).normalize();off=new V3(d.x*fr*.5,fr*.12,d.z*fr*.5);}
   flyTo={t,p:t.clone().add(off),k:0};}));
 const keys=new Set();
 window.addEventListener('keydown',e=>{if(active!=='mars'||(e.target.closest&&e.target.closest('input,textarea,button,select')))return;const k=e.key.toLowerCase();if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){keys.add(k);e.preventDefault();lastInteract=performance.now();camFit=false;}});
 window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 window.addEventListener('blur',()=>keys.clear());
-function fitDist(){let ext=24;PLOTS.forEach(pl=>{if(pl.on)ext=Math.max(ext,Math.hypot(pl.cx,pl.cz)+8);});return Math.min(260,Math.max(60,ext*2.2+14));}
+function fitDist(){let ext=24;ITEMS.forEach(o=>{if(o.cur>=0&&!o.far)ext=Math.max(ext,Math.hypot(o.cx,o.cz)+o.r*.6);});return Math.min(300,Math.max(60,ext*2+14));}
 const _f=new V3(),_r=new V3(),_up=new V3(0,1,0);
 function updateCamera(dt,now){
   if(keys.size){const dist=camera.position.distanceTo(controls.target);const sp=dist*.9*dt;
@@ -1018,6 +1092,7 @@ function tipHtml(sh){const left=fmtDur(sh.launch+sh.dur-SIM.t);
 
 /* ---------- simulation: tickets, daily 18:00 launch, 2–3 day flights ---------- */
 const SIM={t:-.05,speed:60,followers:60,mars:37,q0:53,q1:60,next:61,shipNo:41,ships:[],recent:[]};
+{const q=new URLSearchParams(location.search).get('mars');if(q!==null&&isFinite(+q)){SIM.mars=Math.max(0,Math.min(577,Math.round(+q)));SIM.followers=SIM.mars+23;}}
 const srand=mulberry32(99);
 const qCount=()=>SIM.q1>=SIM.q0?SIM.q1-SIM.q0+1:0;
 const transitPax=()=>SIM.ships.reduce((a,s)=>a+(s.dir>0?s.pax:0),0);
@@ -1035,6 +1110,7 @@ function simLaunch(){const n=qCount(),out=[];let a=SIM.q0,left=n;
   E.launch(out.length);
   if(active==='earth')showToast(`Liftoff: ${out.length} Starship${out.length>1?'s':''}, ${n} colonist${n===1?'':'s'} aboard`,true);updateSimUI();}
 function simArrive(sh){SIM.ships.splice(SIM.ships.indexOf(sh),1);X.remove(sh);
+  if(sh.dir>0)visitShip(sh.type,active==='mars');
   if(sh.dir>0&&sh.pax>0){if(active!=='earth')showToast(`Landing: ${sh.name} with ${sh.pax} colonist${sh.pax===1?'':'s'}`,true);SIM.mars+=sh.pax;setCount(SIM.mars,active==='mars');}
   updateSimUI();}
 function simStep(dt,now){const prev=SIM.t;SIM.t+=dt/SIM.speed;
@@ -1080,10 +1156,11 @@ const easeBack=t=>{const c1=1.5,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(
 const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 let last=performance.now();
 function frame(now){
-  const dt=Math.min((now-last)/1000,.05);last=now;
+  const dt=Math.max(0,Math.min((now-last)/1000,.05));last=now; /* the first frame can carry a timestamp older than the start-up */
   if(playing){const p=Math.min((now-playing.start)/playing.dur,1);setCount(Math.round(easeIO(p)*playing.target),true);if(p>=1)playing=null;}
-  PLOTS.forEach(pl=>{if(pl.anim!=null){pl.anim=Math.min(pl.anim+dt/.85,1);pl.g.scale.setScalar(Math.max(.001,easeBack(pl.anim)));if(pl.anim>=1)pl.anim=null;}
-    if(pl.on&&pl.g.userData.spin)pl.g.userData.spin.rotation.y+=dt*.35;});
+  ITEMS.forEach((o,i)=>{if(o.anim==null)return;o.anim=Math.min(o.anim+dt/.85,1);const s=o.slots[o.cur];if(!s){o.anim=null;return;}
+    s.p.slots[s.i].s=Math.max(.001,easeBack(o.anim));writeSlot(s.p,s.i);setBlob(i);if(o.anim>=1)o.anim=null;});
+  animVisit(dt);flushPools();
   for(let i=pops.length-1;i>=0;i--){const q=pops[i];q.p+=dt/1.1;const s=1+q.p*q.size;q.ring.scale.set(s,s,s);q.ring.material.opacity=.7*(1-q.p);
     if(q.p>=1){scene.remove(q.ring);q.ring.material.dispose();pops.splice(i,1);}}
   const wsp=(W.storm?10:.5+W.wind*9);const a=dPos;for(let i=0;i<DUST;i++){a[i*3]+=dt*wsp*(.7+(i%7)*.1);a[i*3+2]+=dt*wsp*.25;a[i*3+1]+=Math.sin(now*.0004+i)*dt*.15;if(a[i*3]>DW/2)a[i*3]-=DW;if(a[i*3+2]>DW/2)a[i*3+2]-=DW;}dGeo.attributes.position.needsUpdate=true;
@@ -1100,6 +1177,8 @@ function frame(now){
   sky.position.copy(camera.position);GRADE.uniforms.uTime.value=now*.001;
   composer.render(dt);requestAnimationFrame(frame);
 }
-let envTick=0;renderHud();syncCamUI();weatherChanged(true);setCount(SIM.mars,false);simInit();setScene(store.get('scene','mars'));requestAnimationFrame(frame);
+let envTick=0;renderHud();syncCamUI();weatherChanged(true);setCount(SIM.mars,false);simInit();if(SIM.mars>0)visitShip('crew',false);setScene(store.get('scene','mars'));window.RSO={setMars(n){SIM.mars=Math.max(0,Math.round(n));SIM.followers=qCount()+transitPax()+SIM.mars;setCount(SIM.mars,false);E.setFollowers(SIM.followers);updateSimUI();},
+  land(kind){visitShip(kind||'crew',active==='mars');},scene:setScene,get colonists(){return SIM.mars;},camera,controls,items:ITEMS,fitDist};
+requestAnimationFrame(frame);
 })();
 </script>

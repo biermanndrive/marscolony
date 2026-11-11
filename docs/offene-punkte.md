@@ -2,9 +2,10 @@
 
 ## Als Nächstes
 
+- Mars-Szene auf einem echten Rechner prüfen: Bildrate bei 99 Einwohnern, Wirkung im 9:16-Ausschnitt, Landeanflug im Aufnahmemodus
+- Modelle für Epoche III (ab 100 Einwohnern)
+
 - Kanalname und Branding festlegen
-- Nacharbeiten an den Modellen (siehe `models/README.md`, Abschnitt „Bekannte Schwächen“)
-- Modelle in die Mars-Szene des Prototyps einbauen, Landeplatz auf rund 200 m verlegen
 - Modelle in Erdhafen und Transfer einbauen
 - Prototyp für den lokalen Betrieb einrichten: Speicherstand als Datei, Videoexport, Ton
 - Texte im Bild auf Englisch prüfen
@@ -18,5 +19,11 @@
 - Kennzeichnung von KI-Inhalten auf den Plattformen
 - Livestream bei etwa 500 Abonnenten neu bewerten
 - Followerzahlen automatisch abrufen
-- Modelle für Epoche III bis VII
+- Modelle für Epoche IV bis VII
 - Figuren mit Skelett und Animation, Gesichter gegebenenfalls aus einem KI-3D-Generator
+
+## Erledigt am 11.11.2026
+
+- Nacharbeiten an Z01, W01 und W02 (Lukenhöhe, Endkappen, Texturgröße)
+- Modelle für den Browser zusammengefasst und verkleinert (`models/web/`)
+- Mars-Szene mit den Modellen der Epochen 0 bis II, Landeplätze rund 200 m vom Kern hinter einem Regolith-Schutzwall (`docs/mars-szene.md`)
