@@ -1,0 +1,16 @@
+<!-- @dsCard group="Controls" height=236 subtitle="Segmented tabs, toggles and a slider on glass-strong" -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>preview</title>
+<style>html,body{margin:0;height:100%}body{background:var(--scene-ground)}</style></head>
+<body>
+<div class="rs-scene">
+<section class="rs-panel" style="width:300px;background:var(--glass-strong);-webkit-backdrop-filter:var(--blur-strong);backdrop-filter:var(--blur-strong)">
+<div class="rs-seg" role="group" aria-label="Settings tab"><button type="button" aria-pressed="true">Display</button><button type="button" aria-pressed="false">Weather</button><button type="button" aria-pressed="false">Camera</button></div>
+<label class="rs-toggle">All overlays<input type="checkbox" id="t1" checked></label>
+<label class="rs-toggle">Dust storm<input type="checkbox" id="t2"></label>
+<div class="rs-slider"><div class="rs-slider__head"><label for="s1">Dust in the air</label><output>40 %</output></div><input id="s1" type="range" min="0" max="100" value="40"></div>
+</section>
+</div>
+</body>
+</html>

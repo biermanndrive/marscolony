@@ -1,0 +1,18 @@
+{
+  "name": "red-station-one-models",
+  "private": true,
+  "description": "Three.js r128 for the model build scripts, glTF-Transform for the web optimisation",
+  "dependencies": {
+    "three": "0.128.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "meshoptimizer": "^0.22.0",
+    "sharp": "^0.34.0"
+  },
+  "scripts": {
+    "optimize": "node tools/optimize.mjs"
+  }
+}
